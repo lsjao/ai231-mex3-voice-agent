@@ -17,3 +17,5 @@ start weather weather_mcp 8103
 start search search_mcp 8104
 sleep 4
 ss -ltn | grep -E ":810[1-4] " | awk '{print "listening:", $4}'
+# Warm the tool servers' outbound connections in the background (first call is otherwise ~2.5 s slower).
+( sleep 3; .venv/bin/python bench/warm_tools.py >> logs/warm.log 2>&1 ) &

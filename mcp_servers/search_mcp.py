@@ -30,17 +30,17 @@ async def web_search(query: str) -> str:
         return "Search is not available because the search key is missing."
     r = await _client.post("https://api.tavily.com/search",
                            headers={"Authorization": f"Bearer {key}"},
-                           json={"query": query, "max_results": 3, "include_answer": True, "search_depth": "basic"})
+                           json={"query": query, "max_results": 2, "include_answer": True, "search_depth": "basic"})
     r.raise_for_status()
     d = r.json()
     parts = []
     if d.get("answer"):
         parts.append(clean(d["answer"]))
-    for item in d.get("results", [])[:3]:
-        title, snippet = clean(item.get("title", "")), clean(item.get("content", ""))[:160]
+    for item in d.get("results", [])[:2]:
+        title, snippet = clean(item.get("title", "")), clean(item.get("content", ""))[:100]
         if title:
             parts.append(f"{title}: {snippet}" if snippet else title)
-    return " ".join(parts)[:900] or "I found nothing useful for that search."
+    return " ".join(parts)[:550] or "I found nothing useful for that search."
 
 
 if __name__ == "__main__":
