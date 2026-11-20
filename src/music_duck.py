@@ -5,6 +5,7 @@ Rules: duck as soon as the user starts speaking or the agent starts speaking; re
 or ~5 s after the user stopped if the agent never answered (so a cough or a cancelled turn cannot leave it ducked).
 """
 import asyncio
+import time
 
 from loguru import logger
 
@@ -12,6 +13,7 @@ from src.mcp_conn import McpConn
 
 _conn: McpConn | None = None
 _bot_speaking = False
+_last_bot_stop = 0.0
 _restore_task: asyncio.Task | None = None
 
 
@@ -59,6 +61,12 @@ def bot_started():
 
 
 def bot_stopped():
-    global _bot_speaking
+    global _bot_speaking, _last_bot_stop
     _bot_speaking = False
+    _last_bot_stop = time.monotonic()
     _fire(False)
+
+
+def last_bot_stop() -> float:
+    """Monotonic time when the agent last stopped speaking (0.0 if never)."""
+    return _last_bot_stop

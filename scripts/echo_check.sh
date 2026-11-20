@@ -17,5 +17,5 @@ for vol in 90 85 80 75 70 65; do
   if [ "$trig" = "0" ] && awk "BEGIN{exit !($conf < 0.35)}"; then verdict="SAFE"; [ -z "$best" ] && best=$vol; else verdict="RISKY (self-interrupt)"; fi
   echo "speaker ${vol}%: echo confidence ${conf}  ->  ${verdict}"
 done
-if [ -n "$best" ]; then amixer -c Headphones sset PCM ${best}% >/dev/null 2>&1; echo "Set speaker to ${best}% (loudest safe level)."
-else amixer -c Headphones sset PCM 65% >/dev/null 2>&1; echo "No safe level found: set to 65%. Move the mic away from the speaker or use a headset."; fi
+if [ -n "$best" ]; then amixer -c Headphones sset PCM ${best}% >/dev/null 2>&1; echo "$best" > "$HOME/mex3/.speaker_pct"; echo "Set speaker to ${best}% (loudest safe level) and saved it for reboots."
+else amixer -c Headphones sset PCM 65% >/dev/null 2>&1; echo 65 > "$HOME/mex3/.speaker_pct"; echo "No safe level found: set to 65%. Move the mic away from the speaker or use a headset."; fi

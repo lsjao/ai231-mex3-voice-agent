@@ -11,14 +11,15 @@ from collections.abc import AsyncGenerator
 
 from loguru import logger
 
-from pipecat.frames.frames import Frame, TranscriptionFrame, VADUserStartedSpeakingFrame, VADUserStoppedSpeakingFrame
+from pipecat.frames.frames import (Frame, TranscriptionFrame, TTSSpeakFrame, VADUserStartedSpeakingFrame,
+                                   VADUserStoppedSpeakingFrame)
 from pipecat.services.settings import STTSettings, TTSSettings
 from pipecat.services.stt_service import STTService
 from pipecat.services.tts_service import TTSService
 from pipecat.transcriptions.language import Language
 from pipecat.utils.time import time_now_iso8601
 
-from src import music_duck
+from src import fast_commands, music_duck
 from src.echo import is_echo, note_bot_text
 from src.mcp_conn import McpConn
 
@@ -116,6 +117,12 @@ class McpSTT(STTService):
         if text and is_echo(text):
             logger.info(f"[stt] dropped as echo of the agent's own speech: {text!r}")
             return
+        if text:
+            async def _say(reply: str):
+                await self.push_frame(TTSSpeakFrame(reply, append_to_context=False))
+            if await fast_commands.handle(text, _say):     # 'stop the music' etc.: no LLM, effective in ~0.4 s
+                logger.info(f"[stt] handled as a fast music command: {text!r}")
+                return
         if text:
             await self.push_frame(
                 TranscriptionFrame(text, "", time_now_iso8601(), Language.EN, finalized=True)

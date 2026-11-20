@@ -201,6 +201,15 @@ async def music_volume(level: int) -> str:
 
 
 @mcp.tool()
+async def music_adjust(delta: int) -> str:
+    """Internal: raise or lower the music volume by delta percentage points (used by the fast voice-command path)."""
+    if not P.active:
+        return "Nothing is playing."
+    P.volume = max(0, min(100, P.volume + int(delta)))
+    return f"Volume {P.volume} percent."
+
+
+@mcp.tool()
 async def music_status() -> str:
     """Say what is playing right now."""
     return status_text()

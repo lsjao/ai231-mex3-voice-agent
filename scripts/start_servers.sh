@@ -4,7 +4,8 @@
 cd "$HOME/mex3" || exit 1
 mkdir -p logs
 # ALSA levels reset on every reboot on this Pi: re-apply them (no sudo needed). Speaker 90%, mic 65% (100% clips).
-amixer -c Headphones sset PCM 80% >/dev/null 2>&1 && echo "speaker PCM -> 80%" || echo "WARN: could not set speaker volume"
+VOL=$(cat "$HOME/mex3/.speaker_pct" 2>/dev/null || echo 80)   # the venue echo_check.sh stores its chosen level here
+amixer -c Headphones sset PCM ${VOL}% >/dev/null 2>&1 && echo "speaker PCM -> ${VOL}%" || echo "WARN: could not set speaker volume"
 amixer -c Microphone sset Mic 65% >/dev/null 2>&1 && echo "mic gain -> 65%" || echo "WARN: could not set mic gain"
 start() {  # name script port
   if ss -ltn | grep -q "127.0.0.1:$3 "; then echo "$1 already up"; return; fi
