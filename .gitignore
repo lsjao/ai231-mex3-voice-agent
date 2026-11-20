@@ -4,3 +4,10 @@ __pycache__/
 *.pyc
 *.wav
 logs/
+
+# never commit key files
+api keys*
+*keys*.txt
+*.key
+.env.*
+!.env.example
