@@ -42,9 +42,9 @@ async def main():
                 t0 = time.monotonic()
                 r = json.loads(await tool(s, "speak_start", {"text": sent}))
                 ttfb = time.monotonic() - t0
-                n, total = 1, len(base64.b64decode(r["audio"]))
+                jid, n, total = r["id"], 1, len(base64.b64decode(r["audio"]))
                 while not r["done"]:
-                    r = json.loads(await tool(s, "speak_next", {"job_id": r["id"]}))
+                    r = json.loads(await tool(s, "speak_next", {"job_id": jid}))
                     total += len(base64.b64decode(r["audio"]))
                     n += 1
                 print(f"TTS first chunk {ttfb:.2f}s, all {time.monotonic() - t0:.2f}s, {n} chunks, "
