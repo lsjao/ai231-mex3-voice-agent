@@ -14,12 +14,19 @@ class TraceObserver(BaseObserver):
     def __init__(self):
         super().__init__()
         self._last: dict[str, float] = {}
+        self._seen_ids: set[int] = set()
         self._text: list[str] = []
         self._t_vad_stop = self._t_final = None
         self._llm_first = False
 
     def _once(self, frame) -> bool:
-        # Pipecat broadcasts some frames as two copies with different ids: de-duplicate by type within 50 ms.
+        # Pipecat broadcasts some control frames as two copies with different ids: de-duplicate by type within
+        # 50 ms. Streamed text tokens arrive faster than that, so those are de-duplicated by frame id instead.
+        if isinstance(frame, LLMTextFrame):
+            if frame.id in self._seen_ids:
+                return False
+            self._seen_ids.add(frame.id)
+            return True
         key, now = type(frame).__name__, time.monotonic()
         if now - self._last.get(key, -1.0) < 0.05:
             return False

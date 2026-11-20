@@ -11,6 +11,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from loguru import logger
 
+from pipecat.adapters.llm.schemas.tools_schema import ToolsSchema
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
 from pipecat.pipeline.pipeline import Pipeline
@@ -18,8 +19,10 @@ from pipecat.pipeline.runner import WorkerRunner
 from pipecat.pipeline.worker import PipelineParams, PipelineWorker
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair, LLMUserAggregatorParams
+from pipecat.services.mcp_service import MCPClient
 from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.transports.base_transport import TransportParams
+from mcp.client.session_group import StreamableHttpParameters
 
 from src.mcp_services import McpSTT, McpTTS
 from src.trace import TraceObserver
@@ -33,27 +36,41 @@ VAD_CONF = float(os.environ.get("VAD_CONFIDENCE", "0.8"))  # higher = ignores ba
 AUDIO_IN_RATE = 16000   # fdbench requires 16 kHz input
 AUDIO_OUT_RATE = 24000
 PROMPT_VERSION = "v1"
+BENCH = os.environ.get("BENCH") == "1"  # benchmark mode: no tools (class convention: tools/agent calls off)
+TASK_SERVERS = {"weather-mcp": "http://127.0.0.1:8103/mcp", "search-mcp": "http://127.0.0.1:8104/mcp"}
 
 
 def load_prompt() -> str:
     return (ROOT / "prompts" / f"system_{PROMPT_VERSION}.md").read_text(encoding="utf-8").strip()
 
 
-def make_pipeline(transport) -> Pipeline:
+async def make_pipeline(transport):
     stt = McpSTT()
     tts = McpTTS(sample_rate=AUDIO_OUT_RATE)
     llm = OpenRouterLLMService(
         api_key=os.environ["OPENROUTER_API_KEY"],
         settings=OpenRouterLLMService.Settings(model=LLM_MODEL, max_tokens=300, temperature=0.6),
     )
-    context = LLMContext(messages=[{"role": "system", "content": load_prompt()}])
+    clients, tools = [], None
+    if not BENCH:
+        for name, url in TASK_SERVERS.items():
+            try:
+                c = MCPClient(StreamableHttpParameters(url=url))
+                await c.start()
+                t = await c.tools()
+                clients.append(c)
+                tools = t if tools is None else ToolsSchema(standard_tools=tools.standard_tools + t.standard_tools)
+                logger.info(f"tools from {name}: {[f.name for f in t.standard_tools]}")
+            except Exception as e:
+                logger.warning(f"{name} unavailable, continuing without it: {e}")
+    context = LLMContext(messages=[{"role": "system", "content": load_prompt()}], tools=tools)
     pair = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
             vad_analyzer=SileroVADAnalyzer(params=VADParams(confidence=VAD_CONF, stop_secs=STOP_SECS)),
         ),
     )
-    return Pipeline([
+    pipeline = Pipeline([
         transport.input(),
         stt,
         pair.user(),
@@ -62,10 +79,11 @@ def make_pipeline(transport) -> Pipeline:
         transport.output(),
         pair.assistant(),
     ])
+    return pipeline, clients
 
 
 async def build(transport, log_dir: Path):
-    pipeline = make_pipeline(transport)
+    pipeline, clients = await make_pipeline(transport)
     worker = PipelineWorker(
         pipeline,
         params=PipelineParams(audio_in_sample_rate=AUDIO_IN_RATE, audio_out_sample_rate=AUDIO_OUT_RATE,
@@ -75,8 +93,12 @@ async def build(transport, log_dir: Path):
     runner = WorkerRunner(handle_sigint=False)
 
     async def run():
-        await runner.add_workers(worker)
-        await runner.run()
+        try:
+            await runner.add_workers(worker)
+            await runner.run()
+        finally:
+            for c in clients:
+                await c.close()
 
     async def cancel():
         await worker.cancel()
