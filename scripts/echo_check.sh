@@ -14,7 +14,7 @@ for vol in 90 85 80 75 70 65; do
   wait
   conf=$(echo "$out" | sed -E 's/.*best confidence ([0-9.]+);.*/\1/')
   trig=$(echo "$out" | grep -c "YES")
-  if [ "$trig" = "0" ] && awk "BEGIN{exit !($conf < 0.5)}"; then verdict="SAFE"; [ -z "$best" ] && best=$vol; else verdict="RISKY (self-interrupt)"; fi
+  if [ "$trig" = "0" ] && awk "BEGIN{exit !($conf < 0.35)}"; then verdict="SAFE"; [ -z "$best" ] && best=$vol; else verdict="RISKY (self-interrupt)"; fi
   echo "speaker ${vol}%: echo confidence ${conf}  ->  ${verdict}"
 done
 if [ -n "$best" ]; then amixer -c Headphones sset PCM ${best}% >/dev/null 2>&1; echo "Set speaker to ${best}% (loudest safe level)."
