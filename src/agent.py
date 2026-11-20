@@ -48,11 +48,10 @@ def load_prompt() -> str:
     from zoneinfo import ZoneInfo
     now = datetime.now(ZoneInfo(os.environ.get("TZ_NAME", "Asia/Manila")))
     base = (ROOT / "prompts" / f"system_{PROMPT_VERSION}.md").read_text(encoding="utf-8").strip()
-    return (f"{base}
-
-Today is {now:%A, %d %B %Y}; the current year is {now.year}. Never state the date or year "
-            f"from memory. For anything recent or time-sensitive (latest, now, this year, current office holders, "
-            f"scores, results), call web_search first and answer from its result.")
+    today = (f"Today is {now:%A, %d %B %Y}; the current year is {now.year}. Never state the date or year "
+             f"from memory. For anything recent or time-sensitive (latest, now, this year, current office holders, "
+             f"scores, results), call web_search first and answer from its result.")
+    return base + "\n\n" + today
 
 
 async def make_pipeline(transport):
