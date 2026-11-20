@@ -18,6 +18,7 @@ from pipecat.services.tts_service import TTSService
 from pipecat.transcriptions.language import Language
 from pipecat.utils.time import time_now_iso8601
 
+from src import music_duck
 from src.echo import is_echo, note_bot_text
 from src.mcp_conn import McpConn
 
@@ -79,6 +80,7 @@ class McpSTT(STTService):
     async def _handle_vad_user_started_speaking(self, frame: VADUserStartedSpeakingFrame):
         await super()._handle_vad_user_started_speaking(frame)
         logger.info("[stt] VAD: user started speaking")
+        music_duck.user_started()          # lower any playing music while the user talks
         async with self._lock:
             try:
                 await self._conn.call("asr_start")
@@ -95,6 +97,7 @@ class McpSTT(STTService):
     async def _handle_vad_user_stopped_speaking(self, frame: VADUserStoppedSpeakingFrame):
         await super()._handle_vad_user_stopped_speaking(frame)
         logger.info("[stt] VAD: user stopped speaking")
+        music_duck.user_stopped()
         self._active = False
         tail, self._buf = bytes(self._buf), bytearray()
         # Don't block the frame flow (benchmark marks VAD end from this frame): finish in the background.

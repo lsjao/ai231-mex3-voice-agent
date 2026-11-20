@@ -14,6 +14,8 @@ from pipecat.frames.frames import (BotStartedSpeakingFrame, BotStoppedSpeakingFr
                                    LLMContextFrame, TTSSpeakFrame)
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 
+from src import music_duck
+
 MAX_MESSAGES = int(os.environ.get("CONTEXT_MAX_MESSAGES", "16"))
 SLOW_AFTER = float(os.environ.get("SLOW_AFTER_S", "3.0"))
 SLOW_AFTER_TOOL = float(os.environ.get("SLOW_AFTER_TOOL_S", "5.0"))
@@ -70,9 +72,11 @@ class TurnGuard(FrameProcessor):
                                            name="slow_api_guard")
         elif isinstance(frame, BotStartedSpeakingFrame):
             self._speaking = True
+            music_duck.bot_started()      # lower the music while the agent talks
             await self._disarm()
         elif isinstance(frame, BotStoppedSpeakingFrame):
             self._speaking = False
+            music_duck.bot_stopped()
         elif isinstance(frame, InterruptionFrame):
             await self._disarm()
         await self.push_frame(frame, direction)

@@ -15,6 +15,7 @@ start asr asr_mcp 8101
 start tts tts_mcp 8102
 start weather weather_mcp 8103
 start search search_mcp 8104
+start music music_mcp 8105
 sleep 4
 ss -ltn | grep -E ":810[1-4] " | awk '{print "listening:", $4}'
 # Warm the tool servers' outbound connections in the background (first call is otherwise ~2.5 s slower).

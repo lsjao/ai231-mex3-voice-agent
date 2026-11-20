@@ -42,7 +42,16 @@ AUDIO_OUT_RATE = 24000
 PROMPT_VERSION = "v4"
 BENCH = os.environ.get("BENCH") == "1"  # benchmark mode: no tools (class convention: tools/agent calls off)
 HOLD_PHRASES = {"get_weather": "Let me check the weather.", "web_search": "Let me look that up."}  # spoken by OUR code
-TASK_SERVERS = {"weather-mcp": "http://127.0.0.1:8103/mcp", "search-mcp": "http://127.0.0.1:8104/mcp"}
+for _t in ("music_play", "music_pause", "music_resume", "music_stop", "music_next", "music_previous", "music_volume",
+           "music_status"):
+    HOLD_PHRASES[_t] = "Sure."
+# name -> (url, optional tool allow-list). music_duck is internal (called by our code), so the LLM never sees it.
+TASK_SERVERS = {
+    "weather-mcp": ("http://127.0.0.1:8103/mcp", None),
+    "search-mcp": ("http://127.0.0.1:8104/mcp", None),
+    "music-mcp": ("http://127.0.0.1:8105/mcp", ["music_play", "music_pause", "music_resume", "music_stop", "music_next",
+                                                  "music_previous", "music_volume", "music_status"]),
+}
 
 
 def load_prompt(version: str | None = None) -> str:
@@ -74,9 +83,9 @@ async def make_pipeline(transport):
 
     clients, tools = [], None
     if not BENCH:
-        for name, url in TASK_SERVERS.items():
+        for name, (url, allow) in TASK_SERVERS.items():
             try:
-                c = MCPClient(StreamableHttpParameters(url=url))
+                c = MCPClient(StreamableHttpParameters(url=url), tools_filter=allow)
                 await c.start()
                 t = await c.tools()
                 clients.append(c)
