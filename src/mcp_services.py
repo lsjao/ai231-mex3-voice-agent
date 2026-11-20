@@ -12,6 +12,7 @@ from collections.abc import AsyncGenerator
 from loguru import logger
 
 from pipecat.frames.frames import Frame, TranscriptionFrame, VADUserStartedSpeakingFrame, VADUserStoppedSpeakingFrame
+from pipecat.services.settings import STTSettings, TTSSettings
 from pipecat.services.stt_service import STTService
 from pipecat.services.tts_service import TTSService
 from pipecat.transcriptions.language import Language
@@ -31,7 +32,8 @@ class McpSTT(STTService):
     """
 
     def __init__(self, *, url: str = ASR_URL, chunk_ms: int = 100, preroll_ms: int = 300, **kwargs):
-        super().__init__(sample_rate=16000, **kwargs)
+        super().__init__(sample_rate=16000, ttfs_p99_latency=1.0,
+                         settings=STTSettings(model=None, language=None), **kwargs)
         self._conn = McpConn(url)
         self._chunk_bytes = 16000 * 2 * chunk_ms // 1000
         self._preroll = collections.deque()
@@ -114,7 +116,8 @@ class McpTTS(TTSService):
     """Speaks through tts-mcp: speak_start returns the first audio chunk fast, speak_next the rest."""
 
     def __init__(self, *, url: str = TTS_URL, sample_rate: int = 24000, **kwargs):
-        super().__init__(sample_rate=sample_rate, push_start_frame=True, push_stop_frames=True, **kwargs)
+        super().__init__(sample_rate=sample_rate, push_start_frame=True, push_stop_frames=True,
+                         settings=TTSSettings(model=None, voice=None, language=None), **kwargs)
         self._conn = McpConn(url)
 
     def can_generate_metrics(self) -> bool:
