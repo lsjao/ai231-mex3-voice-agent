@@ -64,7 +64,8 @@ async def make_pipeline(transport):
                 logger.info(f"tools from {name}: {[f.name for f in t.standard_tools]}")
             except Exception as e:
                 logger.warning(f"{name} unavailable, continuing without it: {e}")
-    context = LLMContext(messages=[{"role": "system", "content": load_prompt()}], tools=tools)
+    extra = {"tools": tools} if tools is not None else {}  # BENCH mode: no tools (tools=None is invalid)
+    context = LLMContext(messages=[{"role": "system", "content": load_prompt()}], **extra)
     pair = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
