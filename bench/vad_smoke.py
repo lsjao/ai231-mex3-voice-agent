@@ -1,5 +1,5 @@
 """Phase 0: run Silero VAD (via pipecat's bundled model) over a 16 kHz mono wav; print speech segments."""
-import sys, wave
+import asyncio, inspect, sys, wave
 import numpy as np
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADState
@@ -10,16 +10,24 @@ assert w.getframerate() == 16000 and w.getnchannels() == 1 and w.getsampwidth() 
 pcm = w.readframes(w.getnframes())
 vad = SileroVADAnalyzer(sample_rate=16000)
 step = vad.num_frames_required() * 2  # bytes per analysis window
-segs, start, speaking = [], None, False
-for i in range(0, len(pcm) - step + 1, step):
-    t = i / 2 / 16000
-    s = vad.analyze_audio(pcm[i:i + step])
-    if s == VADState.SPEAKING and not speaking:
-        start, speaking = t, True
-    elif s == VADState.QUIET and speaking:
-        segs.append((start, t)); speaking = False
-if speaking:
-    segs.append((start, len(pcm) / 2 / 16000))
+async def main():
+    global segs
+    segs, start, speaking = [], None, False
+    for i in range(0, len(pcm) - step + 1, step):
+        t = i / 2 / 16000
+        s = vad.analyze_audio(pcm[i:i + step])
+        if inspect.isawaitable(s):  # async in newer Pipecat
+            s = await s
+        if s == VADState.SPEAKING and not speaking:
+            start, speaking = t, True
+        elif s == VADState.QUIET and speaking:
+            segs.append((start, t)); speaking = False
+    if speaking:
+        segs.append((start, len(pcm) / 2 / 16000))
+
+    return segs
+
+segs = asyncio.run(main())
 a = np.frombuffer(pcm, np.int16)
 print(f"peak={np.abs(a).max()} rms={np.sqrt((a.astype(float)**2).mean()):.0f}")
 for s, e in segs:
