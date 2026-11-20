@@ -24,12 +24,15 @@ def clean(text: str) -> str:
 
 
 NEWSY = ("latest", "news", "today", "tonight", "yesterday", "election", "score", "won", "wins", "result", "current",
-         "now", "this week", "this year", "update", "recent", "happened", "winner", "standings", "price")
+         "now", "this week", "this year", "update", "recent", "happened", "winner", "standings", "price",
+         "next", "upcoming", "schedule", "fixture", "tomorrow", "when is", "when does", "who is the current")
 
 
-async def _search(key: str, query: str, topic: str, time_range: str | None) -> dict:
-    body = {"query": query, "max_results": 2, "include_answer": True, "topic": topic,
-            "search_depth": os.environ.get("SEARCH_DEPTH", "fast")}
+async def _search(key: str, query: str, topic: str, time_range: str | None, deep: bool = False) -> dict:
+    # Time-sensitive questions get the slower, more relevant 'basic' depth and 3 results (correctness over speed);
+    # everything else stays on 'fast'.
+    body = {"query": query, "max_results": 3 if deep else 2, "include_answer": True, "topic": topic,
+            "search_depth": os.environ.get("SEARCH_DEPTH_NEWS", "basic") if deep else os.environ.get("SEARCH_DEPTH", "fast")}
     if time_range:
         body["time_range"] = time_range
     r = await _client.post("https://api.tavily.com/search", headers={"Authorization": f"Bearer {key}"}, json=body)
@@ -49,9 +52,9 @@ async def web_search(query: str) -> str:
     # only look at recent pages. If that finds nothing, fall back to an unrestricted search.
     q = query if re.search(r"(19|20)\d{2}", query) else f"{query} {year}"
     newsy = any(w in query.lower() for w in NEWSY)
-    d = await _search(key, q, "news" if newsy else "general", "month" if newsy else "year")
+    d = await _search(key, q, "news" if newsy else "general", "month" if newsy else "year", deep=newsy)
     if not d.get("results") and not d.get("answer"):
-        d = await _search(key, q, "general", None)
+        d = await _search(key, q, "general", None, deep=newsy)
     parts = []
     if d.get("answer"):
         parts.append(clean(d["answer"]))

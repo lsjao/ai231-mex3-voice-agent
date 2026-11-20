@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
 LLM_MODEL = os.environ.get("LLM_MODEL", "openai/gpt-4.1-mini")
-STOP_SECS = float(os.environ.get("VAD_STOP_SECS", "0.7"))  # silence that ends a turn: lower = faster, but cuts pauses
+STOP_SECS = float(os.environ.get("VAD_STOP_SECS", "0.45"))  # silence that ends a turn: lower = faster, but cuts pauses
 VAD_START = float(os.environ.get("VAD_START_SECS", "0.35"))  # continuous speech needed before barge-in: ignores clicks/coughs
 VAD_CONF = float(os.environ.get("VAD_CONFIDENCE", "0.8"))  # higher = ignores background noise/music better
 AUDIO_IN_RATE = 16000   # fdbench requires 16 kHz input
