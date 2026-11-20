@@ -24,6 +24,7 @@ from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.transports.base_transport import TransportParams
 from mcp.client.session_group import StreamableHttpParameters
 
+from src.guard import TurnGuard
 from src.mcp_services import McpSTT, McpTTS
 from src.trace import TraceObserver
 
@@ -76,6 +77,7 @@ async def make_pipeline(transport):
         transport.input(),
         stt,
         pair.user(),
+        TurnGuard(),
         llm,
         tts,
         transport.output(),
