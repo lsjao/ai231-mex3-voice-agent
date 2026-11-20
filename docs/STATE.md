@@ -38,7 +38,7 @@ Found-and-fixed: first words clipped (WER 21 %->4 %), TTS replies one turn late,
 
 ## Pending (as of 04:35 Sat)
 Final benchmark re-run (in progress), music MCP (ME2 carry-over: the user asked repeatedly; "Kuya Jukebox" was their ME2 music player),
-3 rehearsals, backup video, 2-page deck, interactive HTML component diagram, README polish, final tag.
+3 rehearsals, 2-page deck, README polish, final tag. (Backup video: DROPPED by the user. Interactive visual: being built in a SEPARATE Claude Code session from docs/VISUAL_HANDOFF.md; first-draft diagram already at docs/agent_visual.html.)
 
 ## Deliberately NOT built now: portfolio website / GitHub / GitHub Pages (instructor's sample tasks from the last demo)
 Decision (user): do NOT build ahead of time; it is to be built live in the demo. Prep only, when asked:

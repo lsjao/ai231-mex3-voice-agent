@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kuya Jukebox: system map</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --ink: #14181f; --muted: #5b6573; --line: #c9d0da;
+    --pi: #eaf3ff; --pi-line: #2f6fdb; --cloud: #fff4e6; --cloud-line: #d9822b;
+    --node: #ffffff; --node-line: #8995a6; --active: #1f9d55; --active-bg: #dff6e8;
+    --warn: #c2410c; --ours: #6d28d9; --ours-bg: #f1eaff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1318; --panel: #181e26; --ink: #e8edf3; --muted: #9aa6b5; --line: #323c49;
+      --pi: #14233a; --pi-line: #5b9bff; --cloud: #2b2012; --cloud-line: #f0a04b;
+      --node: #1d2530; --node-line: #5d6a7c; --active: #3ddc84; --active-bg: #143826;
+      --warn: #fb923c; --ours: #a78bfa; --ours-bg: #241a3f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1318; --panel: #181e26; --ink: #e8edf3; --muted: #9aa6b5; --line: #323c49;
+    --pi: #14233a; --pi-line: #5b9bff; --cloud: #2b2012; --cloud-line: #f0a04b;
+    --node: #1d2530; --node-line: #5d6a7c; --active: #3ddc84; --active-bg: #143826;
+    --warn: #fb923c; --ours: #a78bfa; --ours-bg: #241a3f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 16px 16px 8px; max-width: 1180px; margin: 0 auto; }
+  h1 { margin: 0 0 2px; font-size: 22px; }
+  .sub { color: var(--muted); margin: 0; }
+  main { max-width: 1180px; margin: 0 auto; padding: 8px 16px 32px; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr) 340px; }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: center; }
+  button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; cursor: pointer; }
+  button:hover { border-color: var(--pi-line); }
+  button:focus-visible, .node:focus-visible { outline: 3px solid var(--pi-line); outline-offset: 2px; }
+  button.on { background: var(--pi-line); color: #fff; border-color: var(--pi-line); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .dot { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; border: 2px solid; }
+  svg { width: 100%; height: auto; display: block; }
+  .zone-pi { fill: var(--pi); stroke: var(--pi-line); stroke-dasharray: 7 5; stroke-width: 2; }
+  .zone-cloud { fill: var(--cloud); stroke: var(--cloud-line); stroke-dasharray: 7 5; stroke-width: 2; }
+  .zone-label { font-size: 13px; font-weight: 700; fill: var(--muted); letter-spacing: .04em; }
+  .node rect { fill: var(--node); stroke: var(--node-line); stroke-width: 1.6; transition: all .25s; }
+  .node.ours rect { fill: var(--ours-bg); stroke: var(--ours); }
+  .node.cloudn rect { stroke: var(--cloud-line); }
+  .node text { fill: var(--ink); font-size: 12.5px; pointer-events: none; }
+  .node .t2 { fill: var(--muted); font-size: 11px; }
+  .node { cursor: pointer; }
+  .node.active rect { fill: var(--active-bg); stroke: var(--active); stroke-width: 3; }
+  .node.sel rect { stroke: var(--pi-line); stroke-width: 3; }
+  .edge { stroke: var(--node-line); stroke-width: 1.8; fill: none; marker-end: url(#arr); opacity: .75; transition: all .25s; }
+  .edge.active { stroke: var(--active); stroke-width: 3.5; opacity: 1; marker-end: url(#arrA); }
+  .edge.warn { stroke: var(--warn); }
+  #detail h2 { margin: 0 0 4px; font-size: 17px; }
+  #detail .where { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-bottom: 8px; }
+  #detail dl { margin: 8px 0 0; }
+  #detail dt { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-top: 9px; }
+  #detail dd { margin: 2px 0 0; }
+  #log { margin: 0; padding-left: 18px; max-height: 250px; overflow: auto; font-size: 14px; }
+  #log li { margin: 3px 0; }
+  #log li.now { color: var(--active); font-weight: 700; }
+  .meter { height: 14px; border-radius: 7px; background: var(--line); overflow: hidden; margin: 6px 0 2px; }
+  .meter > i { display: block; height: 100%; width: 0; background: var(--active); transition: width .3s; }
+  .tag { font-size: 12px; color: var(--muted); }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+  .kpi { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px; color: var(--muted); }
+  .kpi b { display: block; font-size: 16px; color: var(--ink); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Kuya Jukebox: full-duplex voice agent on a Raspberry Pi 4</h1>
+  <p class="sub">Click any block for details and measured numbers, or run a scenario to watch the signal flow. Works offline.</p>
+</header>
+<main>
+  <section class="card" aria-label="System map">
+    <div class="controls" id="controls">
+      <button data-s="plain">Plain question</button>
+      <button data-s="tool">Live tool call (weather/search)</button>
+      <button data-s="music">Play music</button>
+      <button data-s="bargein">Barge-in</button>
+      <button data-s="slow">Slow API recovery</button>
+      <button id="reset">Reset</button>
+      <button id="theme" aria-label="Toggle light or dark theme">Theme</button>
+    </div>
+    <svg viewBox="0 0 1000 620" role="img" aria-label="Architecture diagram: microphone to VAD to Pipecat to our MCP servers to cloud APIs and the speaker">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--node-line)"/></marker>
+        <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--active)"/></marker>
+      </defs>
+      <rect class="zone-pi" x="10" y="34" width="655" height="572" rx="14"/>
+      <text class="zone-label" x="26" y="58">ON THE RASPBERRY PI 4 (8 GB)</text>
+      <rect class="zone-cloud" x="705" y="34" width="285" height="572" rx="14"/>
+      <text class="zone-label" x="721" y="58">CLOUD APIs (models only)</text>
+      <g id="edges"></g>
+      <g id="nodes"></g>
+    </svg>
+    <div class="legend">
+      <span><span class="dot" style="border-color:var(--ours);background:var(--ours-bg)"></span>built by us</span>
+      <span><span class="dot" style="border-color:var(--node-line)"></span>library / hardware</span>
+      <span><span class="dot" style="border-color:var(--cloud-line)"></span>cloud API</span>
+      <span><span class="dot" style="border-color:var(--active);background:var(--active-bg)"></span>active now</span>
+    </div>
+  </section>
+  <aside style="display:grid; gap:14px; align-content:start;">
+    <section class="card" id="detail" aria-live="polite"><h2>Pick a block</h2><p class="tag">Select any box on the map to see what it does, what we measured, and what went wrong and got fixed.</p></section>
+    <section class="card" aria-label="Scenario log">
+      <strong id="scn">Scenario timeline</strong>
+      <div class="meter"><i id="bar"></i></div>
+      <div class="tag" id="clock">Run a scenario to see the timeline.</div>
+      <ol id="log"></ol>
+    </section>
+    <section class="card" aria-label="Benchmark">
+      <strong>Class benchmark (tools off)</strong>
+      <div class="kpis" id="kpis"></div>
+      <div class="tag" style="margin-top:6px">Targets: E2E 4.0 s, ASR 0.8 s, LLM 1.5 s, TTS 0.6 s, barge-in 0.8 s, WER 15 %. Tool turns are slower and reported separately.</div>
+    </section>
+  </aside>
+</main>
+<script>
+"use strict";
+const NODES = [
+  {id:"mic", x:30, y:110, w:170, h:52, t:"USB microphone", s:"16 kHz mono (48 kHz capture)", cls:"", where:"Pi hardware",
+   what:"Captures speech at 48 kHz, resampled to 16 kHz for VAD and ASR.", num:"Mic gain 65 % (100 % clipped).", fix:"Mic only opens at 48 kHz natively, so we resample in the transport."},
+  {id:"vad", x:30, y:200, w:170, h:60, t:"Silero VAD + Smart Turn v3", s:"on-device, in-process", cls:"", where:"Pi, in-process",
+   what:"Decides when the user starts and stops speaking, and whether a pause is a finished turn.", num:"Start 0.35 s of speech, stop 0.45 s of silence, confidence 0.8.", fix:"Fan alone scores 0.05 confidence (safe). The agent's own voice at 90 % speaker volume scored 0.9, so the speaker is held at 80 %."},
+  {id:"echo", x:30, y:300, w:170, h:52, t:"Echo filter", s:"drops self-heard text", cls:"ours", where:"Pi, our code",
+   what:"If a transcript is just a fragment of what the agent said in the last 20 s, it is dropped so the agent cannot answer itself.", num:"Live run with fan on: zero phantom turns.", fix:"Single-word replies like 'stop' are never dropped."},
+  {id:"hub", x:250, y:200, w:190, h:110, t:"Pipecat 1.16 pipeline", s:"MCP client · turn handling · barge-in", cls:"ours", where:"Pi, our pipeline",
+   what:"Harness with an MCP client. Streams audio to asr-mcp, sends the transcript to the LLM, calls tools, streams sentences to tts-mcp, and cancels everything on barge-in.", num:"Entry point build(transport) is what the class benchmark drives.", fix:"Prompt v4 (eval 56/56), rolling context window, runtime date."},
+  {id:"guard", x:250, y:350, w:190, h:56, t:"TurnGuard", s:"context trim · slow-API line · ducking", cls:"ours", where:"Pi, our code",
+   what:"Keeps the system prompt plus the last 16 messages, and speaks a short line if no reply audio starts in 3 s.", num:"Fired live on a 5 s LLM stall and covered the gap.", fix:"Holding phrase is spoken by our code when a tool call starts, not left to the model."},
+  {id:"asr", x:490, y:100, w:165, h:56, t:"asr-mcp :8101", s:"streaming Deepgram bridge", cls:"ours", where:"Pi, MCP server (ours)",
+   what:"Holds one warm WebSocket to Deepgram and forwards audio while the user speaks. asr_start / asr_push / asr_finish.", num:"ASR final ≈ 0.3 s after end of speech (was 2.6 s with batch upload).", fix:"Pi is about 236 ms from Deepgram, so batch upload was too slow. First words were once clipped; a 900 ms pre-roll took WER from 21 % to 4 %."},
+  {id:"tts", x:490, y:190, w:165, h:56, t:"tts-mcp :8102", s:"chunked Aura-2 bridge", cls:"ours", where:"Pi, MCP server (ours)",
+   what:"speak_start returns the first audio chunk as soon as it exists; speak_cancel stops synthesis on barge-in.", num:"First audio ≈ 0.3–0.4 s.", fix:"A stray Flush used to make every reply arrive one turn late. Fixed by draining stale socket messages."},
+  {id:"weather", x:490, y:280, w:165, h:50, t:"weather-mcp :8103", s:"get_weather", cls:"ours", where:"Pi, MCP server (ours)",
+   what:"Current weather and today's outlook for a city, as a spoken-style sentence.", num:"≈ 0.5–1.7 s per call.", fix:"Connection pre-warmed at startup."},
+  {id:"search", x:490, y:350, w:165, h:50, t:"search-mcp :8104", s:"web_search", cls:"ours", where:"Pi, MCP server (ours)",
+   what:"Recency-biased web search. Tags any date earlier than today as 'already in the past'.", num:"≈ 1.3–4.7 s depending on depth.", fix:"A small model presented a past date as 'next game' (0/10). Doing the date check in code made it 10/10."},
+  {id:"music", x:490, y:420, w:165, h:50, t:"music-mcp :8105", s:"play · pause · next · volume", cls:"ours", where:"Pi, MCP server (ours)",
+   what:"Plays local ME2 playlists through the speaker with software gain, so ducking is instant. Music lowers while anyone is talking.", num:"6 local tracks, 2 playlists (chill, focus).", fix:"Music files are copyrighted and stay on the Pi, not in the public repo."},
+  {id:"files", x:490, y:500, w:165, h:50, t:"Local music files", s:"~/vcm/music (mp3)", cls:"", where:"Pi storage",
+   what:"The ME2 'Kuya Jukebox' library.", num:"22 MB.", fix:"—"},
+  {id:"spk", x:30, y:440, w:170, h:52, t:"Speaker (3.5 mm)", s:"Headphones card, 80 %", cls:"", where:"Pi hardware",
+   what:"Plays the agent's voice and the music.", num:"Volume cliff: 70–80 % safe, 90 % causes self-interruption.", fix:"scripts/echo_check.sh finds the loudest safe level in the venue in about a minute."},
+  {id:"dg", x:730, y:100, w:240, h:56, t:"Deepgram nova-3 (ASR)", s:"streaming speech to text", cls:"cloudn", where:"Cloud API",
+   what:"Speech recognition.", num:"WER 4.2 % on the class test set.", fix:"Keyword boost for the name 'Kuya Jukebox'."},
+  {id:"dgt", x:730, y:190, w:240, h:56, t:"Deepgram Aura-2 (TTS)", s:"male voice: Orion", cls:"cloudn", where:"Cloud API",
+   what:"Text to speech, one sentence at a time.", num:"First audio ≈ 0.3 s.", fix:"—"},
+  {id:"llm", x:730, y:290, w:240, h:56, t:"OpenRouter · gpt-4.1-mini", s:"LLM with tool calling", cls:"cloudn", where:"Cloud API",
+   what:"Chooses what to say and which tool to call. Chosen over Claude Haiku 5.5 because it was faster to first token on this network.", num:"First token ≈ 0.7–1.5 s (tail up to several seconds).", fix:"If no reply audio starts in 3 s, TurnGuard speaks a short line."},
+  {id:"meteo", x:730, y:400, w:240, h:50, t:"Open-Meteo", s:"weather data", cls:"cloudn", where:"Cloud API", what:"Free weather API, no key.", num:"—", fix:"—"},
+  {id:"tavily", x:730, y:470, w:240, h:50, t:"Tavily", s:"web search", cls:"cloudn", where:"Cloud API", what:"Search API with answer summaries.", num:"'basic' depth for time-sensitive questions, 'fast' otherwise.", fix:"Name-only person searches can return strangers; the tool description tells the model to confirm identity."}
+];
+const EDGES = [
+  ["mic","vad"],["vad","hub"],["echo","hub"],["hub","asr"],["asr","dg"],["hub","llm"],["hub","tts"],["tts","dgt"],
+  ["hub","weather"],["weather","meteo"],["hub","search"],["search","tavily"],["hub","music"],["music","files"],["hub","guard"],["hub","spk"],["music","spk"]
+];
+const SCEN = {
+  plain: {name:"Plain question: 'What's the capital of Japan?'", steps:[
+    {n:["mic"],t:0,m:"You speak. The USB mic captures 16 kHz audio."},
+    {n:["vad"],t:450,m:"VAD hears 0.45 s of silence: end of turn (this wait is not in the benchmark's E2E)."},
+    {n:["hub","asr","dg"],e:[["hub","asr"],["asr","dg"]],t:750,m:"Audio was streamed while you spoke, so the transcript is final ≈ 0.3 s later."},
+    {n:["echo"],t:760,m:"Echo filter checks it is not the agent's own voice."},
+    {n:["hub","llm"],e:[["hub","llm"]],t:1900,m:"LLM first token ≈ 1.2 s."},
+    {n:["hub","tts","dgt"],e:[["hub","tts"],["tts","dgt"]],t:2300,m:"First sentence goes to TTS; first audio ≈ 0.4 s."},
+    {n:["spk"],e:[["hub","spk"]],t:2350,m:"You hear the answer ≈ 2.1–2.4 s after you stopped talking (class benchmark, tools off)."}]},
+  tool: {name:"Live tool call: 'What's the weather in Manila?'", steps:[
+    {n:["mic","vad"],t:0,m:"You speak; VAD ends the turn."},
+    {n:["hub","asr","dg"],e:[["hub","asr"],["asr","dg"]],t:350,m:"Transcript final ≈ 0.3 s."},
+    {n:["hub","llm"],e:[["hub","llm"]],t:1500,m:"The model decides to call get_weather."},
+    {n:["hub","tts","dgt","spk"],e:[["hub","tts"],["hub","spk"]],t:2400,m:"Our code speaks the holding phrase 'Let me check the weather.' at ≈ 2.4 s; the mic is muted during the call."},
+    {n:["hub","weather","meteo"],e:[["hub","weather"],["weather","meteo"]],t:3400,m:"weather-mcp asks Open-Meteo (0.5–1.7 s)."},
+    {n:["hub","llm"],e:[["hub","llm"]],t:4400,m:"Second LLM call turns the result into one spoken sentence."},
+    {n:["hub","tts","dgt","spk"],e:[["hub","tts"],["tts","dgt"],["hub","spk"]],t:5200,m:"You hear the answer ≈ 5 s after you stopped talking (search turns take 5–8 s)."}]},
+  music: {name:"Music: 'Play some focus music'", steps:[
+    {n:["mic","vad","hub"],t:0,m:"You ask for music."},
+    {n:["hub","llm"],e:[["hub","llm"]],t:1500,m:"The model calls music_play(focus)."},
+    {n:["hub","music","files"],e:[["hub","music"],["music","files"]],t:2000,m:"music-mcp picks a track from the local playlist."},
+    {n:["music","spk"],e:[["music","spk"]],t:2300,m:"Music starts through the speaker at a low default volume."},
+    {n:["vad","music"],t:4500,m:"You speak again: VAD triggers ducking, the music drops to 25 % while you talk."},
+    {n:["hub","tts","spk"],e:[["hub","tts"],["hub","spk"]],t:6500,m:"The agent answers over the ducked music, then the music comes back up."}]},
+  bargein: {name:"Barge-in: you interrupt a long answer", steps:[
+    {n:["spk","hub"],e:[["hub","spk"]],t:0,m:"The agent is speaking a long answer."},
+    {n:["mic","vad"],t:900,m:"You start talking over it. VAD needs 0.35 s of real speech so a click or cough does not interrupt."},
+    {n:["hub","tts"],e:[["hub","tts"]],t:1150,m:"The pipeline cancels the TTS and the LLM stream, and speak_cancel drops queued audio at Deepgram."},
+    {n:["spk"],t:1500,m:"Playback stops ≈ 0.6 s after you started speaking (benchmark: 0.59 s, target 0.8 s)."},
+    {n:["hub","asr","dg"],e:[["hub","asr"],["asr","dg"]],t:2000,m:"Your new sentence is transcribed and answered; the old answer is discarded."}]},
+  slow: {name:"Slow API: the LLM stalls", steps:[
+    {n:["mic","vad","hub"],t:0,m:"You ask something; the transcript is ready."},
+    {n:["hub","llm"],e:[["hub","llm"]],t:800,m:"The LLM request is slow (a real 5 s stall happened in testing)."},
+    {n:["guard"],t:3800,m:"3 s with no reply audio: TurnGuard fires."},
+    {n:["hub","tts","spk"],e:[["hub","tts"],["hub","spk"]],t:4200,m:"The agent says 'Sorry, the connection is a bit slow. Still working on it.' instead of dead air."},
+    {n:["hub","llm","spk"],e:[["hub","llm"],["hub","spk"]],t:6500,m:"The real answer arrives and is spoken."}]}
+};
+const KPI = [["E2E","2.4 s","target 4.0"],["ASR final","0.3 s","target 0.8"],["TTS first audio","0.4 s","target 0.6"],["LLM first token","1.3 s","target 1.5"],["Barge-in","0.6 s","target 0.8"],["WER","4.2 %","target 15 %"]];
+
+const NS = "http://www.w3.org/2000/svg";
+const byId = Object.fromEntries(NODES.map(n => [n.id, n]));
+const nodesG = document.getElementById("nodes"), edgesG = document.getElementById("edges");
+const elNode = {}, elEdge = {};
+
+function mk(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function anchor(a, b) {          // point on a's border facing b
+  const ax = a.x + a.w/2, ay = a.y + a.h/2, bx = b.x + b.w/2, by = b.y + b.h/2, dx = bx - ax, dy = by - ay;
+  const sx = dx === 0 ? Infinity : (a.w/2) / Math.abs(dx), sy = dy === 0 ? Infinity : (a.h/2) / Math.abs(dy), s = Math.min(sx, sy);
+  return [ax + dx*s, ay + dy*s];
+}
+EDGES.forEach(([a,b]) => { const A = byId[a], B = byId[b]; const [x1,y1] = anchor(A,B), [x2,y2] = anchor(B,A);
+  elEdge[a+">"+b] = mk("path", {class:"edge", d:`M${x1} ${y1} L${x2} ${y2}`}, edgesG); });
+NODES.forEach(n => {
+  const g = mk("g", {class:"node " + n.cls, tabindex:"0", role:"button", "aria-label": n.t + ". " + n.where}, nodesG);
+  mk("rect", {x:n.x, y:n.y, width:n.w, height:n.h, rx:9}, g);
+  const t1 = mk("text", {x:n.x+10, y:n.y+22}, g); t1.textContent = n.t;
+  const t2 = mk("text", {x:n.x+10, y:n.y+40, class:"t2"}, g); t2.textContent = n.s;
+  g.addEventListener("click", () => select(n.id));
+  g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(n.id); } });
+  elNode[n.id] = g;
+});
+
+function select(id) {
+  Object.values(elNode).forEach(e => e.classList.remove("sel")); elNode[id].classList.add("sel");
+  const n = byId[id], d = document.getElementById("detail");
+  d.innerHTML = "";
+  const h = document.createElement("h2"); h.textContent = n.t; d.appendChild(h);
+  const w = document.createElement("span"); w.className = "where"; w.textContent = n.where; d.appendChild(w);
+  const dl = document.createElement("dl");
+  [["What it does", n.what], ["Measured", n.num], ["Problem and fix", n.fix]].forEach(([k,v]) => {
+    const dt = document.createElement("dt"); dt.textContent = k; const dd = document.createElement("dd"); dd.textContent = v; dl.append(dt, dd); });
+  d.appendChild(dl);
+}
+
+const kp = document.getElementById("kpis");
+KPI.forEach(([k,v,t]) => { const d = document.createElement("div"); d.className = "kpi"; const b = document.createElement("b"); b.textContent = v; d.append(b, document.createTextNode(k + " · " + t)); kp.appendChild(d); });
+
+let timers = [];
+function clearRun() { timers.forEach(clearTimeout); timers = []; Object.values(elNode).forEach(e => e.classList.remove("active")); Object.values(elEdge).forEach(e => e.classList.remove("active")); }
+function run(key) {
+  clearRun(); const sc = SCEN[key]; const log = document.getElementById("log"); log.innerHTML = "";
+  document.getElementById("scn").textContent = sc.name; document.getElementById("bar").style.width = "0";
+  document.querySelectorAll("#controls button[data-s]").forEach(b => b.classList.toggle("on", b.dataset.s === key));
+  const total = sc.steps[sc.steps.length-1].t, SPEED = 0.45;       // 1 s of real time shown in ≈ 0.45 s
+  sc.steps.forEach((s, i) => {
+    const li = document.createElement("li"); li.textContent = `${(s.t/1000).toFixed(1)} s · ${s.m}`; log.appendChild(li);
+    timers.push(setTimeout(() => {
+      Object.values(elNode).forEach(e => e.classList.remove("active")); Object.values(elEdge).forEach(e => e.classList.remove("active"));
+      s.n.forEach(id => elNode[id].classList.add("active"));
+      (s.e || []).forEach(([a,b]) => { const el = elEdge[a+">"+b]; if (el) el.classList.add("active"); });
+      [...log.children].forEach((c, j) => c.classList.toggle("now", j === i));
+      document.getElementById("bar").style.width = (s.t / total * 100) + "%";
+      document.getElementById("clock").textContent = `t = ${(s.t/1000).toFixed(1)} s after you stop talking · ${s.m}`;
+    }, s.t * SPEED + 150));
+  });
+}
+document.querySelectorAll("#controls button[data-s]").forEach(b => b.addEventListener("click", () => run(b.dataset.s)));
+document.getElementById("reset").addEventListener("click", () => { clearRun(); document.getElementById("log").innerHTML = ""; document.getElementById("bar").style.width = "0";
+  document.getElementById("clock").textContent = "Run a scenario to see the timeline."; document.getElementById("scn").textContent = "Scenario timeline";
+  document.querySelectorAll("#controls button[data-s]").forEach(b => b.classList.remove("on")); });
+document.getElementById("theme").addEventListener("click", () => { const r = document.documentElement; const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const cur = r.dataset.theme || (dark ? "dark" : "light"); r.dataset.theme = cur === "dark" ? "light" : "dark"; });
+select("hub");
+</script>
+</body>
+</html>
