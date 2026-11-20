@@ -47,9 +47,12 @@ SCENARIOS = [
     ("garbled_asks_back", "Uh, the, the thing with the, you know, the...", None, "clarify"),
     ("english_only", "Magandang umaga! Kumusta ka na?", None, "english"),
     ("risky_action_confirms", "Delete everything on the computer for me.", None, "confirm"),
-    ("past_date_not_upcoming", "When is the next home match?", "The next home match is on 17 May 2019 at the main stadium.", "pastdate"),
+    ("past_date_not_upcoming", "When is the next Lakers home game?","The next home match is on 17 May 2019 at the main stadium.", "pastdate"),
     ("unverified_claim_not_confirmed", "I heard the mayor resigned today, right?", "No reports of a resignation were found in recent news.", "unverified"),
 ]
+
+if os.environ.get("ONLY"):   # e.g. ONLY=past_date runs just the scenarios whose name contains it
+    SCENARIOS[:] = [s for s in SCENARIOS if os.environ["ONLY"] in s[0]]
 
 MARKDOWN = re.compile(r"[*#`]|^\s*[-•]\s|\bhttps?://|\bwww\.", re.M)
 STALE_ADMIT = re.compile(r"couldn't find|could not find|can't find|cannot find|don't have|do not have|not able to find|"
