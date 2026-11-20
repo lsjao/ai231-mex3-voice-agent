@@ -11,3 +11,6 @@ api keys*
 *.key
 .env.*
 !.env.example
+
+# class benchmark clone (separate repo)
+fd-benchmark/
