@@ -44,16 +44,18 @@ HOLD_PHRASES = {"get_weather": "Let me check the weather.", "web_search": "Let m
 TASK_SERVERS = {"weather-mcp": "http://127.0.0.1:8103/mcp", "search-mcp": "http://127.0.0.1:8104/mcp"}
 
 
-def load_prompt() -> str:
-    """The versioned prompt file plus today's date (the model cannot know it; without this it says 'it is 2024')."""
+def load_prompt(version: str | None = None) -> str:
+    """The versioned prompt file with today's date filled in (the model cannot know the date by itself).
+    v4+ carries a {{today}} placeholder in its <context> block; v1-v3 get the date appended, as they did originally."""
     from datetime import datetime
     from zoneinfo import ZoneInfo
     now = datetime.now(ZoneInfo(os.environ.get("TZ_NAME", "Asia/Manila")))
-    base = (ROOT / "prompts" / f"system_{PROMPT_VERSION}.md").read_text(encoding="utf-8").strip()
-    today = (f"Today is {now:%A, %d %B %Y}; the current year is {now.year}. Never state the date or year "
-             f"from memory. For anything recent or time-sensitive (latest, now, this year, current office holders, "
-             f"scores, results), call web_search first and answer from its result.")
-    return base + "\n\n" + today
+    base = (ROOT / "prompts" / f"system_{version or PROMPT_VERSION}.md").read_text(encoding="utf-8").strip()
+    if "{{today}}" in base:
+        return base.replace("{{today}}", f"{now:%A, %d %B %Y}")
+    return (base + f"\n\nToday is {now:%A, %d %B %Y}; the current year is {now.year}. Never state the date or year "
+            f"from memory. For anything recent or time-sensitive (latest, now, this year, current office holders, "
+            f"scores, results), call web_search first and answer from its result.")
 
 
 async def make_pipeline(transport):
