@@ -68,3 +68,13 @@ Remaining work: build the 2-page deck from docs/DECK_CONTENT.md; README polish (
 the WER end-of-utterance clipping (2 of 30 transcripts lost the last word) is uninvestigated. Backup video was DROPPED by the user. The interactive visual is owned by a SEPARATE session (docs/visual/).
 Rules learned: stage only your own paths (another session works in docs/visual/); syntax-check Python before committing (twice a broken f-string was pushed); `pkill -f` over ssh kills its own shell
 (use the [x]pattern trick in a command where the name appears once); never change the user's PC settings (power plan etc.) without asking; no rehearsed or scripted agent answers anywhere; stay honest about what is unverified.
+
+## MORNING BRIEFING (written ~05:30 Sat while the user slept)
+DONE overnight: (1) barge-in re-measure finished: 5 samples, mean 0.55 s, median 0.32 s, p95 1.17 s, max 1.31 s -> mean passes the 0.8 s target, tail does not; recorded in docs/DECK_CONTENT.md section 5.
+(2) Credits OK: OpenRouter $0.40 used of the key's $5 limit; Tavily 66 of 1000 searches; Deepgram key valid (balance not readable with this key; check the console). (3) WER "clipped last word" investigated:
+NOT a pipeline bug: 4 of 30 trials came from two Full-Duplex-Bench interruption clips that are truncated by design (same clip -> identical truncated text 3/3, normal endpointing 0.41 s); it inflates WER. The audio itself was not inspected.
+(4) README.md rewritten (architecture, MCP table, honest results, decision log, how to run). (5) Pi launcher for the benchmark stopped; no stray sessions in ~/mex3/logs/sessions (0).
+STILL UNVERIFIED by a human voice session: fast music commands, music audibility at volume 65, person-search CAUTION, empty-turn handling, events from a LIVE run, ringtone audibility for the user.
+NEEDS THE USER (in this order): free-form ~4 min rehearsal (say "ready") -> save /replay of that session UNEDITED as docs/visual/sample_session.json and commit only that file; deck format answer
+(default if no answer: editable PowerPoint copying the 2-page template layout, built from docs/DECK_CONTENT.md); demo hotspot SSID/password if not the stored "Jao"; GitHub sandbox repo + token only if the portfolio task is wanted.
+Then: build the 2-page deck, run echo_check.sh in the venue, final tag (e.g. final-demo-v1).
