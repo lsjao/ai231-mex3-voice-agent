@@ -37,10 +37,17 @@ async def main():
         async with ClientSession(st[0], st[1]) as s:
             await s.initialize()
             print("tts tools:", [t.name for t in (await s.list_tools()).tools])
+            import json
             for sent in ["Hello from the Pi.", "It is sunny in Manila today.", "Anything else I can help with?"]:
                 t0 = time.monotonic()
-                b = await tool(s, "speak", {"text": sent})
-                print(f"TTS {time.monotonic() - t0:.2f}s for {len(base64.b64decode(b)) / 2 / 24000:.1f}s audio: {sent!r}")
-
+                r = json.loads(await tool(s, "speak_start", {"text": sent}))
+                ttfb = time.monotonic() - t0
+                n, total = 1, len(base64.b64decode(r["audio"]))
+                while not r["done"]:
+                    r = json.loads(await tool(s, "speak_next", {"job_id": r["id"]}))
+                    total += len(base64.b64decode(r["audio"]))
+                    n += 1
+                print(f"TTS first chunk {ttfb:.2f}s, all {time.monotonic() - t0:.2f}s, {n} chunks, "
+                      f"{total / 2 / 24000:.1f}s audio: {sent!r}")
 
 asyncio.run(main())

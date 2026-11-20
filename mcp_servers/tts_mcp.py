@@ -81,6 +81,89 @@ class Voice:
 
 V = Voice()
 
+# --- chunked playback: speak_start returns the FIRST audio chunk as soon as Deepgram makes it (~0.3 s) ----------
+_jobs: dict[str, asyncio.Queue] = {}
+_gen = 0  # bumped by speak_cancel: jobs created earlier give up instead of speaking
+
+
+async def _run_job(job_id: str, text: str, q: asyncio.Queue, gen: int):
+    try:
+        async with V.lock:
+            if gen != _gen:
+                return
+            for attempt in (1, 2):
+                try:
+                    await V.ensure()
+                    await V.ws.send(json.dumps({"type": "Speak", "text": text}))
+                    await V.ws.send(json.dumps({"type": "Flush"}))
+                    break
+                except Exception:
+                    if attempt == 2:
+                        raise
+                    V.ws = None
+            t0, first = time.monotonic(), True
+            while True:
+                msg = await asyncio.wait_for(V.ws.recv(), timeout=10)
+                if isinstance(msg, bytes):
+                    if first:
+                        print(f"[tts-mcp] job {job_id}: first audio {time.monotonic() - t0:.2f}s", flush=True)
+                        first = False
+                    q.put_nowait(msg)
+                else:
+                    m = json.loads(msg)
+                    if m.get("type") in ("Flushed", "Cleared"):
+                        break
+                    if m.get("type") == "Error":
+                        raise RuntimeError(str(m)[:200])
+    except Exception as e:
+        V.ws = None
+        q.put_nowait(e)
+    finally:
+        q.put_nowait(None)  # end-of-stream marker
+
+
+async def _drain(q: asyncio.Queue, job_id: str) -> dict:
+    """Wait for at least one item, then take everything already queued. Returns {audio_b64, done}."""
+    item = await q.get()
+    chunks, done = bytearray(), False
+    while True:
+        if item is None:
+            done = True
+        elif isinstance(item, Exception):
+            _jobs.pop(job_id, None)
+            raise item
+        else:
+            chunks += item
+        if done or q.empty():
+            break
+        item = q.get_nowait()
+    if done:
+        _jobs.pop(job_id, None)
+    return {"audio": base64.b64encode(bytes(chunks)).decode(), "done": done}
+
+
+@mcp.tool()
+async def speak_start(text: str) -> str:
+    """Start synthesizing one sentence. Returns JSON {id, audio, done}: audio is base64 PCM16 24 kHz mono holding the
+    FIRST chunk; keep calling speak_next(id) until done is true."""
+    job_id = str(time.monotonic_ns())
+    if os.environ.get("TTS_MOCK") == "1":
+        return json.dumps({"id": job_id, "audio": await speak(text), "done": True})
+    q: asyncio.Queue = asyncio.Queue()
+    _jobs[job_id] = q
+    asyncio.create_task(_run_job(job_id, text, q, _gen))
+    first = await _drain(q, job_id)
+    first["id"] = job_id
+    return json.dumps(first)
+
+
+@mcp.tool()
+async def speak_next(job_id: str) -> str:
+    """Next chunk of a speak_start job: JSON {audio, done}. Returns done=true with empty audio if the job is gone."""
+    if job_id not in _jobs:
+        return json.dumps({"audio": "", "done": True})
+    return json.dumps(await _drain(_jobs[job_id], job_id))
+
 
 @mcp.tool()
 async def speak(text: str) -> str:
@@ -102,7 +185,9 @@ async def speak(text: str) -> str:
 
 @mcp.tool()
 async def speak_cancel() -> str:
-    """Barge-in: drop any audio Deepgram is still producing."""
+    """Barge-in: drop any audio Deepgram is still producing and any sentences still waiting their turn."""
+    global _gen
+    _gen += 1
     if V.ws is not None and V.ws.close_code is None:
         try:
             await V.ws.send(json.dumps({"type": "Clear"}))
