@@ -42,6 +42,8 @@ FINAL run 2026-11-21_04-16-23 (Pi 4 8 GB, bare, peak 48 C, never throttled, Wi-F
 | WER | ASR accuracy on test set | < 15 % | 9.8 % | n/a | 30 | PASS (see note) |
 Honest notes: barge-in has only 2 samples and missed the target; a re-measure with more rounds is planned. WER rose from 4.2 % (earlier run) to 9.8 % partly because this run drew
 different test phrases and the scorer counts "20 minutes" vs "twenty minutes", "July 4" vs "07/04" and "orchids" vs "orchid" as errors, but 2 of 30 transcripts also lost their last word (real).
+Barge-in re-measure (run 2026-11-21_05-00-29, 3 rounds, n=5 interruption clips, tools off): mean 0.55 s, median 0.32 s, p95 1.17 s, min 0.16 s, max 1.31 s.
+Verdict: the mean PASSES the 0.8 s target, but the tail does not (p95 1.17 s) and it is highly variable; 5 samples is still small. The 0.94 s in the main run was one slow sample (n=2), not a typical value.
 Earlier run (02:24): E2E 2.39 s (p95 4.17), ASR final 0.26 s, LLM TTFT 1.51 s (p95 3.46), TTS TTFB 0.41 s, barge-in 0.59 s (n=2), WER 4.2 %. The context trim (last 16 messages) and the model switch
 are what brought the p95 tail down.
 Reported separately (live, tools ON, not part of the class benchmark): plain turns ~2.0-2.6 s to first sound; search turns: holding phrase ~2.4 s, full answer ~5-8 s.
