@@ -1,42 +1,140 @@
-"""asr-mcp: our MCP server wrapping Deepgram speech-to-text. Runs on the Pi, streamable HTTP on localhost.
+"""asr-mcp: our MCP server wrapping Deepgram streaming speech-to-text. Runs on the Pi, streamable HTTP on localhost.
 
-Tool: transcribe(audio_b64, sample_rate) -> text. Audio is base64 PCM16 mono (the VAD-bounded utterance).
-Batch (prerecorded) REST call, not streaming: one HTTP round trip after the turn ends. See docs/PLAN.md.
-Set ASR_MOCK=1 to return canned text without any network or key (for wiring tests).
+Why streaming: the Pi is ~240 ms (RTT) from Deepgram, so a batch upload after the turn ends costs several round trips.
+We keep ONE warm Deepgram WebSocket and forward audio while the user is still speaking; at turn end the final
+transcript is nearly ready.
+
+Tools (one utterance at a time):
+  asr_start()            reset the utterance buffer, make sure the WebSocket is up (warm)
+  asr_push(audio_b64)    forward a chunk of base64 PCM16 mono 16 kHz audio
+  asr_finish() -> text   flush Deepgram, wait for the final transcript, return it
+  transcribe(audio_b64)  convenience: start + push + finish for a whole clip (used by tests)
+Set ASR_MOCK=1 for canned text without network or key.
 """
-import base64, os, time
-import httpx
+import asyncio
+import base64
+import json
+import os
+import time
+
 from dotenv import load_dotenv
 from mcp.server.mcpserver import MCPServer
+from websockets.asyncio.client import connect
 
 load_dotenv()
 PORT = int(os.environ.get("ASR_MCP_PORT", "8101"))
 MODEL = os.environ.get("DEEPGRAM_ASR_MODEL", "nova-3")
+URL = (f"wss://api.deepgram.com/v1/listen?model={MODEL}&encoding=linear16&sample_rate=16000&channels=1"
+       "&language=en&smart_format=true&interim_results=false&endpointing=false")
 mcp = MCPServer("asr-mcp")
-_client = httpx.AsyncClient(timeout=15)  # reused: keeps the TLS connection warm between turns
+
+
+def mock() -> bool:
+    return os.environ.get("ASR_MOCK") == "1"
+
+
+class Stream:
+    def __init__(self):
+        self.ws = None
+        self.parts: list[str] = []
+        self.final = asyncio.Event()
+        self.reader = None
+        self.keeper = None
+
+    async def ensure(self):
+        if self.ws is not None and self.ws.close_code is None:
+            return
+        key = os.environ.get("DEEPGRAM_API_KEY")
+        if not key:
+            raise RuntimeError("DEEPGRAM_API_KEY is not set")
+        t0 = time.monotonic()
+        self.ws = await connect(URL, additional_headers={"Authorization": f"Token {key}"}, max_size=None)
+        self.reader = asyncio.create_task(self._read(self.ws))
+        if self.keeper is None or self.keeper.done():
+            self.keeper = asyncio.create_task(self._keepalive())
+        print(f"[asr-mcp] connected to Deepgram in {time.monotonic() - t0:.2f}s", flush=True)
+
+    async def _read(self, ws):
+        try:
+            async for raw in ws:
+                m = json.loads(raw)
+                if m.get("type") == "Results":
+                    t = m["channel"]["alternatives"][0]["transcript"]
+                    if m.get("is_final") and t:
+                        self.parts.append(t)
+                    if m.get("from_finalize"):
+                        self.final.set()
+        except Exception as e:
+            print(f"[asr-mcp] reader ended: {type(e).__name__}", flush=True)
+        finally:
+            self.final.set()  # never leave finish() hanging on a dead socket
+
+    async def _keepalive(self):
+        while True:
+            await asyncio.sleep(4)
+            if self.ws is not None and self.ws.close_code is None:
+                try:
+                    await self.ws.send(json.dumps({"type": "KeepAlive"}))
+                except Exception:
+                    pass
+
+
+S = Stream()
+
+
+@mcp.tool()
+async def asr_start() -> str:
+    """Begin a new utterance: clear any old text and make sure the Deepgram connection is warm."""
+    S.parts.clear()
+    S.final.clear()
+    if not mock():
+        await S.ensure()
+    return "ok"
+
+
+@mcp.tool()
+async def asr_push(audio_b64: str) -> str:
+    """Forward one chunk of base64 16-bit mono 16 kHz PCM audio to the live transcription stream."""
+    if mock():
+        return "ok"
+    for attempt in (1, 2):
+        try:
+            await S.ensure()
+            await S.ws.send(base64.b64decode(audio_b64))
+            return "ok"
+        except Exception as e:
+            if attempt == 2:
+                raise
+            print(f"[asr-mcp] send failed ({type(e).__name__}), reconnecting", flush=True)
+            S.ws = None
+    return "ok"
+
+
+@mcp.tool()
+async def asr_finish() -> str:
+    """End of utterance: flush Deepgram and return the final transcript text."""
+    if mock():
+        return os.environ.get("ASR_MOCK_TEXT", "this is a mock transcript")
+    t0 = time.monotonic()
+    await S.ensure()
+    S.final.clear()
+    await S.ws.send(json.dumps({"type": "Finalize"}))
+    try:
+        await asyncio.wait_for(S.final.wait(), timeout=3.0)
+    except asyncio.TimeoutError:
+        print("[asr-mcp] finalize timed out; returning what we have", flush=True)
+    text = " ".join(S.parts).strip()
+    S.parts.clear()
+    print(f"[asr-mcp] finish -> {time.monotonic() - t0:.2f}s: {text!r}", flush=True)
+    return text
 
 
 @mcp.tool()
 async def transcribe(audio_b64: str, sample_rate: int = 16000) -> str:
-    """Transcribe one utterance of base64-encoded 16-bit mono PCM and return the text."""
-    if os.environ.get("ASR_MOCK") == "1":
-        return os.environ.get("ASR_MOCK_TEXT", "this is a mock transcript")
-    key = os.environ.get("DEEPGRAM_API_KEY")
-    if not key:
-        raise RuntimeError("DEEPGRAM_API_KEY is not set")
-    pcm = base64.b64decode(audio_b64)
-    t0 = time.monotonic()
-    r = await _client.post(
-        "https://api.deepgram.com/v1/listen",
-        params={"model": MODEL, "smart_format": "true", "language": "en",
-                "encoding": "linear16", "sample_rate": sample_rate, "channels": 1},
-        headers={"Authorization": f"Token {key}", "Content-Type": "application/octet-stream"},
-        content=pcm,
-    )
-    r.raise_for_status()
-    text = r.json()["results"]["channels"][0]["alternatives"][0]["transcript"]
-    print(f"[asr-mcp] {len(pcm)/2/sample_rate:.1f}s audio -> {time.monotonic()-t0:.2f}s: {text!r}", flush=True)
-    return text
+    """Transcribe a whole clip (16 kHz mono PCM16, base64). Convenience wrapper over the streaming tools."""
+    await asr_start()
+    await asr_push(audio_b64)
+    return await asr_finish()
 
 
 if __name__ == "__main__":
