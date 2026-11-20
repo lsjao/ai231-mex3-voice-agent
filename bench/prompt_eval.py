@@ -99,15 +99,11 @@ RUBRICS = {
 def judge(client, criterion, user, tool_result, reply):
     from datetime import datetime
     rubric = RUBRICS[criterion].format(date=f"{datetime.now():%A, %d %B %Y}")
-    prompt = (f"You are grading a voice assistant's reply.
-Criterion: {rubric}
-
-User said: {user}
-"
-              f"Tool result given to the assistant: {tool_result or 'none'}
-Assistant replied: {reply}
-
-"
+    prompt = ("You are grading a voice assistant's reply.\n"
+              f"Criterion: {rubric}\n\n"
+              f"User said: {user}\n"
+              f"Tool result given to the assistant: {tool_result or 'none'}\n"
+              f"Assistant replied: {reply}\n\n"
               "Answer with exactly one word: PASS or FAIL.")
     r = client.post("https://openrouter.ai/api/v1/chat/completions", headers={"Authorization": f"Bearer {KEY}"},
                     json={"model": JUDGE_MODEL, "messages": [{"role": "user", "content": prompt}], "temperature": 0, "max_tokens": 5})
