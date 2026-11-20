@@ -47,3 +47,24 @@ Decision (user): do NOT build ahead of time; it is to be built live in the demo.
 2. Plan if needed: site-builder MCP (generates a static page from details the user speaks, NOT from name-only web search, which finds strangers)
    running as a background task, plus a github MCP limited to the sandbox repo. Instructor-style demo: one big task + small tasks meanwhile + interrupt + pause.
 3. Until then the agent answers honestly that it cannot do it (eval scenario `cannot_do_honest` 4/4).
+
+## UPDATE Sat 05:05 (READ THIS FIRST; it supersedes older "Pending" lines above)
+Servers on the Pi (scripts/start_servers.sh, also cron @reboot): asr 8101, tts 8102, weather 8103, search 8104, music 8105 (all 127.0.0.1),
+events feed 8106 and the visual page 8107 (0.0.0.0; the page is served from ~/mex3/docs/visual, so updating the visual = `git pull` on the Pi).
+Built since the sections above: music-mcp (ME2 mp3s in ~/vcm/music, default volume 65, ducking while anyone talks), fast voice path
+(src/fast_commands.py: stop/pause/resume/next/previous/louder/quieter with NO LLM, ~0.4 s), echo filter, empty turns left unanswered,
+person-search caution inside the search result, past-date tagging, prompt v4 in production (v5 rejected by eval), real-event log
+(src/events.py -> ~/mex3/logs/sessions/*.jsonl, feeds the visual; disabled in BENCH mode).
+Final benchmark (tools off, run 2026-11-21_04-16-23): E2E 2.19 s (p95 2.81), ASR 0.31, LLM TTFT 1.20 (p95 1.61), TTS 0.41, barge-in 0.94 s = MISS (n=2), WER 9.8 %. Details in docs/DECK_CONTENT.md section 5.
+IN PROGRESS at 05:05: a 3-round barge-in re-measure (fdbench on the user's PC + agent in BENCH mode on the Pi), ~19 min, results in
+fd-benchmark/runs/kuya-jukebox/<newest folder>/summary.md (local, git-ignored). When it finishes: put barge-in mean/p95/n into DECK_CONTENT section 5, then stop the
+Pi launcher: `pkill -f "[f]d-benchmark/launch_assistant"` (run it alone, in its own ssh call).
+NOT verified by a human voice session yet (the user was away for the last test): fast music commands, music audibility at volume 65, the person-search CAUTION,
+empty-turn handling, and events from a LIVE run (the observer was only unit-tested with real frame objects in a temp dir).
+Needs the user: (1) a free-form ~4 min rehearsal, then save that session UNEDITED as docs/visual/sample_session.json (curl http://192.168.88.8:8106/sessions, then
+/replay?session=<id>) and commit ONLY that file; (2) deck format: PowerPoint copying the 2-page template layout, or only tables to paste into the professor's template; (3) demo hotspot
+SSID/password if it is not the stored "Jao" (command in docs/VENUE_CHECKLIST.md); (4) only if the portfolio task is wanted: GitHub sandbox repo + fine-grained token (docs/VENUE_CHECKLIST.md section 4).
+Remaining work: build the 2-page deck from docs/DECK_CONTENT.md; README polish (architecture + decision log); final tag (e.g. final-demo-v1) after one last rehearsal and echo_check in the venue;
+the WER end-of-utterance clipping (2 of 30 transcripts lost the last word) is uninvestigated. Backup video was DROPPED by the user. The interactive visual is owned by a SEPARATE session (docs/visual/).
+Rules learned: stage only your own paths (another session works in docs/visual/); syntax-check Python before committing (twice a broken f-string was pushed); `pkill -f` over ssh kills its own shell
+(use the [x]pattern trick in a command where the name appears once); never change the user's PC settings (power plan etc.) without asking; no rehearsed or scripted agent answers anywhere; stay honest about what is unverified.
