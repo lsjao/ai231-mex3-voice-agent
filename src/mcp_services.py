@@ -77,6 +77,7 @@ class McpSTT(STTService):
 
     async def _handle_vad_user_started_speaking(self, frame: VADUserStartedSpeakingFrame):
         await super()._handle_vad_user_started_speaking(frame)
+        logger.info("[stt] VAD: user started speaking")
         async with self._lock:
             try:
                 await self._conn.call("asr_start")
@@ -92,6 +93,7 @@ class McpSTT(STTService):
 
     async def _handle_vad_user_stopped_speaking(self, frame: VADUserStoppedSpeakingFrame):
         await super()._handle_vad_user_stopped_speaking(frame)
+        logger.info("[stt] VAD: user stopped speaking")
         self._active = False
         tail, self._buf = bytes(self._buf), bytearray()
         # Don't block the frame flow (benchmark marks VAD end from this frame): finish in the background.
@@ -106,6 +108,7 @@ class McpSTT(STTService):
             except Exception as e:
                 logger.error(f"asr_finish failed: {e}")
                 return
+        logger.info(f"[stt] final transcript: {text!r}")
         if text:
             await self.push_frame(
                 TranscriptionFrame(text, "", time_now_iso8601(), Language.EN, finalized=True)
