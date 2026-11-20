@@ -22,6 +22,7 @@ from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.transports.base_transport import TransportParams
 
 from src.mcp_services import McpSTT, McpTTS
+from src.trace import TraceObserver
 
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
@@ -68,6 +69,7 @@ async def build(transport, log_dir: Path):
         pipeline,
         params=PipelineParams(audio_in_sample_rate=AUDIO_IN_RATE, audio_out_sample_rate=AUDIO_OUT_RATE,
                               enable_metrics=True, enable_usage_metrics=True),
+        observers=[TraceObserver()],
     )
     runner = WorkerRunner(handle_sigint=False)
 
