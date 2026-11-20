@@ -35,7 +35,7 @@ All MCP servers are our code, run on the Pi (streamable HTTP, localhost). Models
 - Prompt versioned in `prompts/`.
 
 ## Benchmark
-One clock (Pi monotonic). E2E = speaker out - VAD end; barge-in = playback stop - speech start. JSON log per run in `bench/`. Method stub; details to come.
+Uses the class benchmark (trueshotjames/ai231-me3-full-duplex-benchmarking, "fdbench") instead of a bespoke tool; we only supply an adapter (`src/assistant_entry.py`). One clock (Pi monotonic). E2E = speaker out - VAD end; barge-in = playback stop - speech start. Targets: E2E 4.0 s, ASR final 0.8 s, LLM TTFT 1.5 s, TTS TTFB 0.6 s, barge-in 0.8 s. See `docs/PLAN.md`.
 
 ## Secrets
 Copy `.env.example` to `.env` (git-ignored). Never commit keys.
