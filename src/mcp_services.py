@@ -31,7 +31,7 @@ class McpSTT(STTService):
     which keeps Deepgram usage and bandwidth low.
     """
 
-    def __init__(self, *, url: str = ASR_URL, chunk_ms: int = 100, preroll_ms: int = 300, **kwargs):
+    def __init__(self, *, url: str = ASR_URL, chunk_ms: int = 100, preroll_ms: int = 900, **kwargs):
         super().__init__(sample_rate=16000, ttfs_p99_latency=1.0,
                          settings=STTSettings(model=None, language=None), **kwargs)
         self._conn = McpConn(url)
