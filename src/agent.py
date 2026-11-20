@@ -32,6 +32,7 @@ load_dotenv(ROOT / ".env")
 
 LLM_MODEL = os.environ.get("LLM_MODEL", "openai/gpt-4.1-mini")
 STOP_SECS = float(os.environ.get("VAD_STOP_SECS", "0.7"))  # silence that ends a turn: lower = faster, but cuts pauses
+VAD_START = float(os.environ.get("VAD_START_SECS", "0.35"))  # continuous speech needed before barge-in: ignores clicks/coughs
 VAD_CONF = float(os.environ.get("VAD_CONFIDENCE", "0.8"))  # higher = ignores background noise/music better
 AUDIO_IN_RATE = 16000   # fdbench requires 16 kHz input
 AUDIO_OUT_RATE = 24000
@@ -67,7 +68,7 @@ async def make_pipeline(transport):
     pair = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
-            vad_analyzer=SileroVADAnalyzer(params=VADParams(confidence=VAD_CONF, stop_secs=STOP_SECS)),
+            vad_analyzer=SileroVADAnalyzer(params=VADParams(confidence=VAD_CONF, start_secs=VAD_START, stop_secs=STOP_SECS)),
         ),
     )
     pipeline = Pipeline([

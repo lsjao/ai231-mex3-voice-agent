@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Start our four MCP servers (asr 8101, tts 8102, weather 8103, search 8104) if they are not already listening.
+# Safe to run repeatedly. Logs go to ~/mex3/logs/. Used at boot via cron @reboot and before demos.
+cd "$HOME/mex3" || exit 1
+mkdir -p logs
+start() {  # name script port
+  if ss -ltn | grep -q "127.0.0.1:$3 "; then echo "$1 already up"; return; fi
+  nohup .venv/bin/python "mcp_servers/$2.py" >> "logs/$1.log" 2>&1 &
+  echo "$1 started (port $3)"
+}
+start asr asr_mcp 8101
+start tts tts_mcp 8102
+start weather weather_mcp 8103
+start search search_mcp 8104
+sleep 4
+ss -ltn | grep -E ":810[1-4] " | awk '{print "listening:", $4}'
