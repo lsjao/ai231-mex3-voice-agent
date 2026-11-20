@@ -13,7 +13,7 @@ async def call(url, tool, args):
             t0 = time.monotonic()
             res = await s.call_tool(tool, args)
             dt = time.monotonic() - t0
-            if res.isError:
+            if res.is_error:
                 raise RuntimeError(res.content)
             return names, res.content[0].text, dt
 
