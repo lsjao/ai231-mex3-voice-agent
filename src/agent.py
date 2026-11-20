@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from loguru import logger
 
 from pipecat.adapters.llm.schemas.tools_schema import ToolsSchema
+from pipecat.frames.frames import TTSSpeakFrame
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.audio.vad.vad_analyzer import VADParams
 from pipecat.pipeline.pipeline import Pipeline
@@ -39,6 +40,7 @@ AUDIO_IN_RATE = 16000   # fdbench requires 16 kHz input
 AUDIO_OUT_RATE = 24000
 PROMPT_VERSION = "v1"
 BENCH = os.environ.get("BENCH") == "1"  # benchmark mode: no tools (class convention: tools/agent calls off)
+HOLD_PHRASES = {"get_weather": "Let me check the weather.", "web_search": "Let me look that up."}  # spoken by OUR code
 TASK_SERVERS = {"weather-mcp": "http://127.0.0.1:8103/mcp", "search-mcp": "http://127.0.0.1:8104/mcp"}
 
 
@@ -61,6 +63,12 @@ async def make_pipeline(transport):
         api_key=os.environ["OPENROUTER_API_KEY"],
         settings=OpenRouterLLMService.Settings(model=LLM_MODEL, max_tokens=300, temperature=0.6),
     )
+    @llm.event_handler("on_function_calls_started")
+    async def _hold_phrase(service, function_calls):
+        """Deterministic filler: the model only sometimes says a holding phrase before a tool call (dead air otherwise)."""
+        name = function_calls[0].function_name if function_calls else ""
+        await service.push_frame(TTSSpeakFrame(HOLD_PHRASES.get(name, "One moment."), append_to_context=False))
+
     clients, tools = [], None
     if not BENCH:
         for name, url in TASK_SERVERS.items():
