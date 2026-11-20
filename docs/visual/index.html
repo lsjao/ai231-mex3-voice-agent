@@ -14,72 +14,175 @@
   --amber:#ffc15e; --coral:#ff7a66; --red:#ff4d5e; --cyan:#7fe3f0; --pink:#ff8ad8;
   --good:#8de8b8; --miss:#ff9b8a; --border:1px;
   --font:"Google Sans","Google Sans Flex",system-ui,"Segoe UI",sans-serif;
+  /* golden-ratio type scale, base 1rem (steps of φ and √φ) */
+  --t-2:.62rem; --t-1:.79rem; --t0:1rem; --t1:1.27rem; --t2:1.62rem; --t3:2.06rem; --t4:2.62rem; --t5:4.24rem;
 }
 :root.hc{--bg1:#000;--bg2:#000;--surface:#000;--surface2:#0a0a0a;--line:#fdf1e3;--text:#fff;--muted:#f1e3d6;--border:2px}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{font-size:max(11px,min(1.25vw,2.222vh))}   /* 1rem = 16px at 1280x720, 24px at 1920x1080 */
-body{margin:0;height:100vh;overflow:hidden;font-family:var(--font);color:var(--text);
-  background:radial-gradient(ellipse at 22% 45%,var(--bg2) 0%,var(--bg1) 70%) var(--bg1);display:flex;flex-direction:column}
+body{margin:0;height:100vh;overflow:hidden;font-family:var(--font);font-size:var(--t0);color:var(--text);
+  background:radial-gradient(ellipse at 30% 45%,var(--bg2) 0%,var(--bg1) 70%) var(--bg1);display:flex;flex-direction:column}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* ---------- header ---------- */
-header{display:flex;align-items:center;gap:.8rem;padding:.55rem .9rem;flex:0 0 auto}
-.brand{display:flex;flex-direction:column;line-height:1.1;margin-right:auto}
-.brand b{font-size:1.5rem;font-weight:700;letter-spacing:.01em;color:var(--amber)}
-.brand span{font-size:.85rem;color:var(--muted)}
-.pill{display:inline-flex;align-items:center;gap:.45rem;padding:.3rem .8rem;border-radius:99px;border:var(--border) solid var(--line);background:var(--surface);font-weight:700;font-size:1rem;letter-spacing:.04em;white-space:nowrap}
-.pill i{width:.7rem;height:.7rem;border-radius:50%;background:var(--muted)}
+header{display:flex;align-items:center;gap:.8rem;padding:.5rem .9rem;flex:0 0 auto}
+.brand{display:flex;flex-direction:column;line-height:1.05;margin-right:auto}
+.brand b{font-size:var(--t2);font-weight:700;color:var(--amber)}
+.brand span{font-size:var(--t-1);color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem .8rem;border-radius:99px;border:var(--border) solid var(--line);background:var(--surface);font-weight:700;font-size:var(--t0);letter-spacing:.04em;white-space:nowrap}
+.pill i{width:.62rem;height:.62rem;border-radius:50%;background:var(--muted)}
 .pill[data-k=live]{color:var(--good)} .pill[data-k=live] i{background:var(--good)}
 .pill[data-k=reconnecting]{color:var(--amber)} .pill[data-k=reconnecting] i{background:var(--amber)}
 .pill[data-k=replay]{color:var(--cyan)} .pill[data-k=replay] i{background:var(--cyan)}
 .pill[data-k=waiting]{color:var(--muted)}
-.hostbox{display:flex;align-items:center;gap:.4rem;font-size:.85rem;color:var(--muted)}
-.hostbox input{width:11rem;background:var(--surface);border:var(--border) solid var(--line);border-radius:.5rem;padding:.3rem .5rem;font-size:.9rem}
-.btn{background:var(--surface);border:var(--border) solid var(--line);border-radius:.6rem;padding:.35rem .75rem;font-size:.9rem;font-weight:500}
+.hostbox{display:flex;align-items:center;gap:.4rem;font-size:var(--t-1);color:var(--muted)}
+.hostbox input{width:10.5rem;background:var(--surface);border:var(--border) solid var(--line);border-radius:.5rem;padding:.25rem .5rem;font-size:var(--t-1)}
+.btn{background:var(--surface);border:var(--border) solid var(--line);border-radius:.6rem;padding:.3rem .7rem;font-size:var(--t-1);font-weight:500}
 .btn:hover{border-color:var(--amber)}
 .btn[aria-pressed=true]{border-color:var(--cyan);color:var(--cyan)}
+.views{display:flex;gap:.3rem}
+.views [role=tab]{background:var(--surface);border:var(--border) solid var(--line);border-radius:.6rem;padding:.3rem .8rem;font-size:var(--t0);font-weight:700}
+.views [role=tab][aria-selected=true]{border-color:var(--amber);color:var(--amber);background:var(--surface2)}
+.views kbd{font:inherit;font-size:var(--t-1);color:var(--muted);margin-left:.35rem;font-weight:400}
 
-/* ---------- layout ---------- */
-main{flex:1 1 0;min-height:0;display:grid;grid-template-columns:21rem minmax(0,1fr) 23.5rem;gap:.8rem;padding:0 .9rem .8rem}
-.col{min-height:0;display:flex;flex-direction:column;gap:.7rem}
+main{flex:1 1 0;min-height:0;padding:0 .9rem .8rem;display:flex}
+.view{flex:1 1 auto;min-width:0;min-height:0;display:grid;gap:.8rem}
 .card{background:var(--surface);border:var(--border) solid var(--line);border-radius:1rem;padding:.7rem .85rem;min-height:0}
-.card h2{margin:0 0 .45rem;font-size:.9rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.src{font-size:.8rem;color:var(--muted);line-height:1.3;margin:.4rem 0 0}
+.card h2{margin:0 0 .4rem;font-size:var(--t-1);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.src{font-size:var(--t-1);color:var(--muted);line-height:1.3;margin:.35rem 0 0}
 
-/* ---------- hero ---------- */
-.heroCard{flex:1 1 0;display:flex;flex-direction:column;align-items:center;padding:.4rem .6rem .6rem;position:relative;overflow:hidden}
-.hero{position:relative;flex:1 1 0;min-height:0;width:100%;display:flex;justify-content:center}
-.halo{position:absolute;inset:8% 4% 6%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,77,94,.38),rgba(255,122,102,.14) 55%,transparent 75%);opacity:.7;pointer-events:none}
+/* ---------- STAGE view: φ : 1 columns, jukebox about 0.618 of the height ---------- */
+#vStage{grid-template-columns:minmax(0,1.618fr) minmax(0,1fr)}
+.left{display:grid;grid-template-rows:minmax(0,2.6fr) minmax(0,1fr);gap:.8rem;min-height:0}
+.heroCard{position:relative;display:flex;justify-content:center;padding:.3rem .6rem;overflow:hidden;background:radial-gradient(ellipse at 50% 55%,#33111a 0%,var(--surface) 70%)}
+:root.hc .heroCard{background:#000}
+.hero{position:relative;height:100%;min-height:0;display:flex;justify-content:center;width:100%}
+.halo{position:absolute;inset:4% 12% 10%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,77,94,.5),rgba(255,122,102,.18) 55%,transparent 75%);opacity:.75;pointer-events:none}
 .hero svg{position:relative;height:100%;width:auto;max-width:100%;overflow:visible}
-.stateLabel{display:flex;flex-direction:column;align-items:center;text-align:center;gap:.1rem;min-height:3.2rem}
-.stateLabel b{font-size:1.7rem;font-weight:700;display:flex;align-items:center;gap:.5rem;line-height:1.1}
-.stateLabel b em{font-style:normal;font-size:1.3rem}
-.stateLabel span{font-size:.95rem;color:var(--muted);min-height:1.2rem}
-.hero-badge{font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--cyan);border:var(--border) dashed var(--cyan);border-radius:.5rem;padding:.15rem .5rem;margin-bottom:.3rem}
-.previewRow{display:flex;flex-wrap:wrap;gap:.3rem;justify-content:center;margin-top:.35rem}
-.previewRow .btn{padding:.2rem .5rem;font-size:.8rem}
+.stateLabel{position:absolute;left:0;right:0;bottom:.5rem;display:flex;flex-direction:column;align-items:center;text-align:center;pointer-events:none}
+.stateLabel b{font-size:var(--t4);font-weight:700;display:flex;align-items:center;gap:.6rem;line-height:1.05;text-shadow:0 0 .8rem #000,0 0 .3rem #000}
+.stateLabel b em{font-style:normal;font-size:var(--t3);color:var(--amber)}
+.stateLabel span{font-size:var(--t1);color:var(--text);min-height:1.4rem;text-shadow:0 0 .6rem #000}
+.hero-badge{position:absolute;top:.5rem;left:.6rem;z-index:2;font-size:var(--t-1);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--cyan);background:var(--bg1);border:var(--border) dashed var(--cyan);border-radius:.5rem;padding:.15rem .5rem}
+.previewRow{position:absolute;top:.5rem;right:.6rem;z-index:2;display:flex;flex-direction:column;gap:.25rem;align-items:flex-end}
+.previewRow .btn{padding:.15rem .5rem;font-size:var(--t-1);background:var(--bg1)}
 
-/* hero svg paint */
-.tube-out{fill:none;stroke:url(#gOut);stroke-width:26;stroke-linecap:butt}
+/* latency tiles */
+.latCard{display:flex;flex-direction:column;justify-content:space-between}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;flex:1 1 auto;margin-top:.2rem}
+.tile{border:var(--border) solid var(--line);border-radius:.8rem;padding:.35rem .5rem;background:var(--surface2);display:flex;flex-direction:column;justify-content:center;min-width:0}
+.tile .l{font-size:var(--t-1);color:var(--muted);line-height:1.15}
+.tile .v{font-size:var(--t3);font-weight:700;line-height:1.1;white-space:nowrap}
+.tile .m{font-size:var(--t-1);font-weight:700;min-height:1rem}
+.tile .tb{position:relative;height:.45rem;border-radius:.3rem;background:var(--bg1);margin-top:.2rem}
+.tile .tb i{position:absolute;left:0;top:0;bottom:0;border-radius:.3rem;background:var(--muted);width:0}
+.tile .tb s{position:absolute;left:50%;top:-.15rem;bottom:-.15rem;width:2px;background:var(--text);text-decoration:none}
+.tile.ok .v,.tile.ok .m{color:var(--good)} .tile.ok .tb i{background:var(--good)}
+.tile.miss .v,.tile.miss .m{color:var(--miss)} .tile.miss .tb i{background:var(--miss)}
+.sess{font-size:var(--t-1);color:var(--muted);margin:.3rem 0 0;line-height:1.3}
+
+/* ---------- chat ---------- */
+.chatCard{display:flex;flex-direction:column;padding:.6rem .8rem}
+.chatHead{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.3rem}
+.chatHead h2{margin:0}
+.replayBar{display:none;align-items:center;gap:.4rem;flex-wrap:wrap;border:var(--border) dashed var(--cyan);border-radius:.6rem;padding:.3rem .5rem;margin-bottom:.4rem;font-size:var(--t-1);color:var(--cyan)}
+.replayBar b{font-weight:700}
+.replayBar .btn{padding:.1rem .45rem}
+.replayBar progress{flex:1 1 5rem;height:.45rem;accent-color:var(--cyan)}
+.chatCard.isReplay .replayBar{display:flex}
+.chatCard.isReplay{border-color:var(--cyan)}
+#feed{list-style:none;margin:0;padding:0 .3rem 0 0;flex:1 1 0;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:.75rem;scrollbar-color:var(--line) transparent}
+.turn{display:flex;flex-direction:column;gap:.3rem}
+.turnH{font-size:var(--t-1);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.row{font-size:var(--t1);line-height:1.3}
+.msg{overflow-wrap:anywhere;padding-left:.7rem;border-left:3px solid transparent}
+.msg .who{display:block;font-size:var(--t-1);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:.05rem}
+.msg.user{color:var(--muted);border-left-color:var(--line)}
+.msg.user .who{color:var(--cyan)}
+.msg.agent{color:var(--text);font-weight:500;border-left-color:var(--amber)}
+.msg.agent .who{color:var(--amber)}
+.chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.3rem}
+.chip{font-size:var(--t-1);font-weight:500;border-radius:99px;padding:.05rem .5rem;border:var(--border) solid var(--line);background:var(--bg1);white-space:nowrap;color:var(--muted)}
+.chip b{font-weight:700}
+.chip.ok{color:var(--good);border-color:rgba(141,232,184,.5)} .chip.miss{color:var(--miss);border-color:rgba(255,155,138,.6)}
+.evt{font-size:var(--t0);color:var(--muted);display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap;padding-left:.7rem}
+.evt .ic{font-style:normal;color:var(--amber)}
+.evt.tool b{color:var(--amber);font-weight:700}
+.evt.int,.evt.int .ic{color:var(--coral)}
+.evt.guard{color:var(--amber)}
+.evt .q{color:var(--text)}
+.spin{display:inline-block;width:.8em;height:.8em;border:2px solid var(--amber);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+.empty{margin:auto;text-align:center;color:var(--muted);max-width:24rem;padding:1rem}
+.empty b{display:block;font-size:var(--t2);color:var(--text);margin-bottom:.4rem}
+.empty span{font-size:var(--t0);line-height:1.4}
+.menu{position:absolute;right:.9rem;top:3.4rem;z-index:5;width:24rem;max-width:92vw;background:var(--surface);border:var(--border) solid var(--amber);border-radius:.9rem;padding:.7rem;display:none;flex-direction:column;gap:.45rem;font-size:var(--t0);box-shadow:0 1rem 3rem #000a}
+.menu.open{display:flex}
+.menu .msg2{color:var(--muted);font-size:var(--t-1);line-height:1.35}
+.menu .btn{text-align:left;font-size:var(--t0)}
+.menu ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.3rem;max-height:12rem;overflow:auto}
+
+/* ---------- NUMBERS view ---------- */
+#vNum{grid-template-columns:minmax(0,1.618fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+.benchCard{display:flex;flex-direction:column}
+.brows{flex:1 1 auto;display:flex;flex-direction:column;justify-content:space-between;gap:.2rem;min-height:0}
+.brow{display:grid;grid-template-columns:9.5rem minmax(0,1fr) 6.6rem 5.6rem;align-items:center;gap:.7rem;border-top:1px solid var(--line);padding-top:.2rem;flex:1 1 0;min-height:0}
+.brow:first-child{border-top:0}
+.brow .nm{font-size:var(--t1);font-weight:700;line-height:1.1}
+.brow .nm small{display:block;font-size:var(--t-1);font-weight:400;color:var(--muted)}
+.track{position:relative;height:1.1rem;border-radius:.55rem;background:var(--bg1);border:1px solid var(--line)}
+.track i{position:absolute;left:0;top:0;bottom:0;border-radius:.55rem}
+.track s{position:absolute;top:-.3rem;bottom:-.3rem;width:3px;background:var(--text);text-decoration:none}
+.track u{position:absolute;top:-.1rem;bottom:-.1rem;width:2px;background:var(--text);opacity:.55;text-decoration:none}
+.brow.ok .track i{background:var(--good)} .brow.miss .track i{background:var(--miss)}
+.brow .val{font-size:var(--t3);font-weight:700;line-height:1;text-align:right;white-space:nowrap}
+.brow.ok .val{color:var(--good)} .brow.miss .val{color:var(--miss)}
+.brow .val small{display:block;font-size:var(--t-1);font-weight:400;color:var(--muted);margin-top:.1rem}
+.badge{display:inline-flex;align-items:center;gap:.25rem;font-weight:700;font-size:var(--t0);border-radius:.5rem;padding:.15rem .5rem;white-space:nowrap}
+.badge.ok{color:var(--good);background:rgba(141,232,184,.12);border:var(--border) solid rgba(141,232,184,.5)}
+.badge.miss{color:var(--miss);background:rgba(255,155,138,.12);border:var(--border) solid rgba(255,155,138,.6)}
+.tgt{display:block;font-size:var(--t-1);color:var(--muted);margin-top:.1rem}
+.legend{font-size:var(--t-1);color:var(--muted);margin:.3rem 0 0}
+
+.robCard{display:flex;flex-direction:column}
+.rbars{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;gap:.9rem;min-height:0}
+.rb .top{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;font-size:var(--t0)}
+.rb .top b{font-size:var(--t3);line-height:1}
+.rb.ok b{color:var(--good)} .rb.miss b{color:var(--miss)}
+.rb .track{height:1.5rem;margin-top:.2rem}
+.rb.ok .track i{background:var(--good)} .rb.miss .track i{background:var(--miss)}
+.thr{font-size:var(--t-1);color:var(--muted);position:relative;height:1.1rem}
+.thr span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.big0{display:flex;align-items:center;gap:.7rem;border-top:1px solid var(--line);padding-top:.4rem;margin-top:.4rem}
+.big0 b{font-size:var(--t5);color:var(--good);line-height:.95}
+.big0 span{font-size:var(--t0);line-height:1.25}
+
+.strip{grid-column:1 / -1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.618fr);gap:.8rem}
+.ba .nm{font-size:var(--t-1);color:var(--muted);line-height:1.2}
+.ba .x{font-size:var(--t2);font-weight:700;white-space:nowrap;line-height:1.2;margin:.1rem 0}
+.ba .x i{font-style:normal;color:var(--miss)} .ba .x u{text-decoration:none;color:var(--good)} .ba .x em{font-style:normal;color:var(--muted);padding:0 .25rem}
+.ba .why{font-size:var(--t-1);color:var(--muted);line-height:1.2}
+.plain{font-size:var(--t-1);line-height:1.35;margin:0;padding-left:1rem}
+.plain li{margin:.15rem 0}
+
+/* ---------- hero svg paint ---------- */
+.tube-out{fill:none;stroke:url(#gOut);stroke-width:26}
 .tube-in{fill:none;stroke:var(--amber);stroke-width:18}
 .tube-core{fill:none;stroke:#fff3dc;stroke-width:6;opacity:.9}
-.glowL{fill:none;stroke-linecap:butt}
-.glow{opacity:.6}
+.glowL{fill:none}
+.glow{opacity:.65}
 .ripple{fill:none;stroke:var(--coral);stroke-width:26;opacity:0;transform-origin:200px 340px}
 .dial{transform-origin:200px 215px}
 .chase,.chaseT{offset-path:path("M68,470 V215 A132 132 0 0 1 332 215 V470");offset-distance:0%;opacity:0;fill:#fff3dc}
 .wv rect{fill:var(--amber);transform-box:fill-box;transform-origin:50% 100%;opacity:0}
 .eq rect{fill:#fff3dc;transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(.18)}
-.panelL,.panelR,.panelU{transition:opacity .3s}
 .flashfx{opacity:0;pointer-events:none}
 .svgwrap{transform-origin:50% 60%}
 
-/* state animations (transform / opacity / filter only) */
-@keyframes breathe{0%,100%{opacity:.4}50%{opacity:.85}}
+@keyframes breathe{0%,100%{opacity:.45}50%{opacity:.95}}
 @keyframes ripple{0%{opacity:.75;transform:scale(1)}100%{opacity:0;transform:scale(1.1)}}
 @keyframes wave{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -88,35 +191,35 @@ main{flex:1 1 0;min-height:0;display:grid;grid-template-columns:21rem minmax(0,1
 @keyframes hue{to{filter:hue-rotate(360deg)}}
 @keyframes flash{0%{opacity:0}18%{opacity:.95}100%{opacity:0}}
 @keyframes settle{0%{transform:scale(1.035)}100%{transform:scale(1)}}
-@keyframes glowflick{0%,100%{opacity:.45}50%{opacity:.7}}
+@keyframes glowflick{0%,100%{opacity:.45}50%{opacity:.75}}
 
 [data-state=idle] .glow{animation:breathe 5s ease-in-out infinite}
-[data-state=listening] .glow{opacity:.95}
+[data-state=listening] .glow{opacity:1}
 [data-state=listening] .ripple{animation:ripple 1.8s ease-out infinite}
 [data-state=listening] .ripple.r2{animation-delay:.9s}
 [data-state=listening] .wv rect{opacity:1;animation:wave .9s ease-in-out infinite;animation-delay:var(--d)}
 [data-state=thinking] .dial{animation:spin 6s linear infinite}
 [data-state=thinking] .glow{animation:glowflick 2.4s ease-in-out infinite}
-[data-state=speaking] .glow{opacity:.95}
+[data-state=speaking] .glow{opacity:1}
 [data-state=speaking] .eq rect{animation:eqb .7s ease-in-out infinite;animation-delay:var(--d)}
-[data-state=tool] .glow{opacity:.8}
+[data-state=tool] .glow{opacity:.85}
 [data-state=tool] .chase{opacity:1;animation:chase 1.6s linear infinite}
 [data-state=tool] .chaseT.t1{opacity:.55;animation:chase 1.6s linear infinite;animation-delay:-.1s}
 [data-state=tool] .chaseT.t2{opacity:.3;animation:chase 1.6s linear infinite;animation-delay:-.2s}
-[data-state=music] .glow{opacity:.9}
+[data-state=music] .glow{opacity:.95}
 [data-state=music] .panelL,[data-state=music] .panelU{animation:hue 7s linear infinite}
 [data-state=music] .panelR{animation:hue 7s linear infinite;animation-delay:-3.5s}
 [data-state=music] .eq rect{animation:eqb 1.3s ease-in-out infinite;animation-delay:var(--d)}
 .flash .flashfx{animation:flash .75s ease-out 1}
 .flash .svgwrap{animation:settle .75s ease-out 1}
 
-/* reduced motion: no movement, state is carried by a static look + the text label */
+/* reduced motion: no movement; the state is carried by a static look plus the text label */
 :root.reduce *{animation:none!important;transition:none!important}
 :root.reduce [data-state=idle] .glow{opacity:.55}
 :root.reduce [data-state=listening] .ripple.r1{opacity:.45;transform:scale(1.05)}
 :root.reduce [data-state=listening] .wv rect{opacity:1;transform:scaleY(.6)}
 :root.reduce [data-state=thinking] .dial{transform:rotate(22deg)}
-:root.reduce [data-state=thinking] .glow{opacity:.35}
+:root.reduce [data-state=thinking] .glow{opacity:.4}
 :root.reduce [data-state=speaking] .eq rect{transform:scaleY(.7)}
 :root.reduce [data-state=speaking] .eq rect:nth-child(2n){transform:scaleY(.4)}
 :root.reduce [data-state=tool] .chase{opacity:1;offset-distance:50%}
@@ -125,103 +228,23 @@ main{flex:1 1 0;min-height:0;display:grid;grid-template-columns:21rem minmax(0,1
 :root.reduce [data-state=music] .eq rect{transform:scaleY(.55)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
-/* ---------- last turn tiles ---------- */
-.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.4rem}
-.tile{border:var(--border) solid var(--line);border-radius:.7rem;padding:.35rem .3rem;text-align:center;background:var(--surface2)}
-.tile .v{display:block;white-space:nowrap;font-size:1.4rem;font-weight:700;line-height:1.1}
-.tile .l{display:block;font-size:.78rem;color:var(--muted);line-height:1.15}
-.tile .m{display:block;font-size:.72rem;font-weight:700;min-height:1rem}
-.tile.ok .v,.tile.ok .m{color:var(--good)} .tile.miss .v,.tile.miss .m{color:var(--miss)}
-.sess{font-size:.82rem;color:var(--muted);margin:.4rem 0 0;line-height:1.3}
-
-/* ---------- chat ---------- */
-.chatCard{flex:1 1 0;display:flex;flex-direction:column;padding:.6rem .8rem}
-.chatHead{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.35rem}
-.chatHead h2{margin:0}
-.replayBar{display:none;align-items:center;gap:.4rem;flex-wrap:wrap;border:var(--border) dashed var(--cyan);border-radius:.6rem;padding:.35rem .5rem;margin-bottom:.4rem;font-size:.9rem;color:var(--cyan)}
-.replayBar b{font-weight:700}
-.replayBar .btn{padding:.15rem .5rem;font-size:.82rem}
-.replayBar progress{flex:1 1 6rem;height:.5rem;accent-color:var(--cyan)}
-.chatCard.isReplay .replayBar{display:flex}
-.chatCard.isReplay{border-color:var(--cyan)}
-#feed{list-style:none;margin:0;padding:0 .2rem 0 0;flex:1 1 0;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:.6rem;scrollbar-color:var(--line) transparent}
-.turn{border-left:3px solid var(--line);padding-left:.6rem;display:flex;flex-direction:column;gap:.35rem}
-.turnH{font-size:.8rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
-.row{font-size:1.25rem;line-height:1.3}
-.msg{border-radius:.9rem;padding:.4rem .65rem;max-width:96%;overflow-wrap:anywhere}
-.msg .who{display:block;font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:.1rem}
-.msg.user{background:var(--surface2);border:var(--border) solid var(--line);align-self:flex-start}
-.msg.user .who{color:var(--cyan)}
-.msg.agent{background:#3a1620;border:var(--border) solid #6b2e3b;align-self:flex-end}
-.msg.agent .who{color:var(--amber)}
-:root.hc .msg.agent{background:#1a0a0e}
-.chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.3rem}
-.chip{font-size:.85rem;font-weight:500;border-radius:99px;padding:.1rem .55rem;border:var(--border) solid var(--line);background:var(--bg1);white-space:nowrap}
-.chip b{font-weight:700}
-.chip.ok{color:var(--good);border-color:rgba(141,232,184,.5)} .chip.miss{color:var(--miss);border-color:rgba(255,155,138,.6)}
-.evt{font-size:1rem;color:var(--muted);display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap}
-.evt .ic{font-style:normal;color:var(--amber)}
-.evt.tool b{color:var(--amber);font-weight:700}
-.evt.int .ic,.evt.int{color:var(--coral)}
-.evt.guard{color:var(--amber)}
-.evt .q{color:var(--text)}
-.spin{display:inline-block;width:.8em;height:.8em;border:2px solid var(--amber);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
-.empty{margin:auto;text-align:center;color:var(--muted);max-width:26rem;padding:1rem}
-.empty b{display:block;font-size:1.5rem;color:var(--text);margin-bottom:.4rem}
-.empty span{font-size:1rem;line-height:1.4}
-.menu{position:absolute;right:.9rem;top:3.6rem;z-index:5;width:24rem;max-width:92vw;background:var(--surface);border:var(--border) solid var(--amber);border-radius:.9rem;padding:.7rem;display:none;flex-direction:column;gap:.45rem;font-size:.95rem;box-shadow:0 1rem 3rem #000a}
-.menu.open{display:flex}
-.menu .msg2{color:var(--muted);font-size:.85rem;line-height:1.35}
-.menu .btn{text-align:left}
-.menu ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.3rem;max-height:12rem;overflow:auto}
-
-/* ---------- metrics ---------- */
-.benchCard{flex:0 0 auto}
-table{width:100%;border-collapse:collapse}
-th{font-size:.75rem;font-weight:500;color:var(--muted);text-align:left;padding:0 .2rem .2rem;letter-spacing:.04em}
-td{padding:.18rem .2rem;border-top:1px solid var(--line);vertical-align:middle}
-td.n{font-size:1rem;line-height:1.15} td.n small{display:block;font-size:.78rem;color:var(--muted)}
-td.val{font-size:1.6rem;font-weight:700;line-height:1;white-space:nowrap} td.val small{display:block;font-size:.75rem;font-weight:400;color:var(--muted);margin-top:.1rem}
-td.st{white-space:nowrap;text-align:right}
-.badge{display:inline-flex;align-items:center;gap:.25rem;font-weight:700;font-size:.95rem;border-radius:.5rem;padding:.15rem .5rem}
-.badge.ok{color:var(--good);background:rgba(141,232,184,.12);border:var(--border) solid rgba(141,232,184,.5)}
-.badge.miss{color:var(--miss);background:rgba(255,155,138,.12);border:var(--border) solid rgba(255,155,138,.6)}
-.tabsCard{flex:1 1 0;display:flex;flex-direction:column;overflow:hidden}
-[role=tablist]{display:flex;gap:.3rem;margin-bottom:.4rem}
-[role=tab]{flex:1;background:var(--surface2);border:var(--border) solid var(--line);border-radius:.6rem;padding:.25rem .3rem;font-size:.85rem;font-weight:700}
-[role=tab][aria-selected=true]{border-color:var(--amber);color:var(--amber)}
-[role=tabpanel]{flex:1 1 0;min-height:0;overflow:auto}
-[role=tabpanel][hidden]{display:none}
-.bars{display:flex;flex-direction:column;gap:.5rem;margin-top:.2rem}
-.br{display:grid;grid-template-columns:6.2rem 1fr 4.4rem;align-items:center;gap:.4rem;font-size:.9rem}
-.br .t{position:relative;height:1.05rem;border-radius:.5rem;background:var(--bg1);border:1px solid var(--line)}
-.br .t i{position:absolute;left:0;top:0;bottom:0;border-radius:.5rem}
-.br .t s{position:absolute;top:-.2rem;bottom:-.2rem;width:3px;background:var(--text);text-decoration:none}
-.br .num{font-weight:700;font-size:1.15rem;text-align:right}
-.br.ok i{background:var(--good)} .br.miss i{background:var(--miss)}
-.br.ok .num{color:var(--good)} .br.miss .num{color:var(--miss)}
-.big0{display:flex;align-items:baseline;gap:.5rem;margin-top:.5rem}
-.big0 b{font-size:2.6rem;color:var(--good);line-height:1}
-.big0 span{font-size:.95rem;line-height:1.25}
-.ba{display:flex;flex-direction:column;gap:.35rem}
-.ba div{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;border-top:1px solid var(--line);padding-top:.3rem;font-size:.9rem}
-.ba div:first-child{border-top:0}
-.ba .x{font-size:1.4rem;font-weight:700;white-space:nowrap}
-.ba .x i{font-style:normal;color:var(--miss)} .ba .x u{text-decoration:none;color:var(--good)} .ba .x em{font-style:normal;color:var(--muted);padding:0 .25rem}
-.plain{font-size:.95rem;line-height:1.4;margin:0;padding-left:1.1rem}
-.plain li{margin:.25rem 0}
-
 /* ---------- narrow / laptop portrait ---------- */
 @media (max-width:900px){
   html{font-size:15px} body{height:auto;overflow:auto}
-  main{grid-template-columns:1fr} .heroCard{min-height:26rem} .chatCard{min-height:30rem}
-  header{flex-wrap:wrap}
+  main{display:block} .view{display:flex;flex-direction:column}
+  .left{display:flex;flex-direction:column} .heroCard{height:28rem} .chatCard{min-height:30rem}
+  header{flex-wrap:wrap} .brow{grid-template-columns:1fr 5rem 5rem} .brow .track{grid-column:1 / -1;order:5}
+  .strip{display:flex;flex-direction:column}
 }
 </style>
 </head>
 <body>
 <header>
   <div class="brand"><b>Kuya Jukebox</b><span>full-duplex voice agent · Raspberry Pi 4</span></div>
+  <div class="views" role="tablist" aria-label="View">
+    <button role="tab" id="tabStage" aria-selected="true" aria-controls="vStage">Stage<kbd>1</kbd></button>
+    <button role="tab" id="tabNum" aria-selected="false" aria-controls="vNum" tabindex="-1">Numbers<kbd>2</kbd></button>
+  </div>
   <span class="pill" id="pill" data-k="waiting" role="status" aria-live="polite"><i></i><span id="pillText">WAITING</span></span>
   <label class="hostbox">Pi host <input id="host" spellcheck="false" aria-label="Pi host and port" autocomplete="off"></label>
   <button class="btn" id="btnReplay" aria-haspopup="true" aria-expanded="false">Replay…</button>
@@ -241,133 +264,121 @@ td.st{white-space:nowrap;text-align:right}
 </div>
 
 <main>
-  <!-- ===== left: hero + last turn ===== -->
-  <section class="col" aria-label="Agent state">
-    <div class="card heroCard">
-      <div class="hero-badge" id="prevBadge" hidden>Animation preview · no conversation data</div>
-      <div class="hero" id="hero" data-state="idle">
-        <div class="halo"></div>
-        <svg viewBox="0 0 400 540" role="img" aria-label="Neon jukebox that shows what the agent is doing" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <linearGradient id="gOut" gradientUnits="userSpaceOnUse" x1="0" y1="60" x2="0" y2="480"><stop offset="0" stop-color="#ff7a66"/><stop offset=".55" stop-color="#ff9a5e"/><stop offset="1" stop-color="#ffb35c"/></linearGradient>
-            <linearGradient id="gChrome" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9dfe0"/><stop offset=".45" stop-color="#7d6a70"/><stop offset=".6" stop-color="#3a2a30"/><stop offset="1" stop-color="#b9a9ae"/></linearGradient>
-            <linearGradient id="gBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a0f15"/><stop offset="1" stop-color="#14070a"/></linearGradient>
-            <radialGradient id="gDome" cx=".5" cy="1" r="1"><stop offset="0" stop-color="#ffd28a"/><stop offset=".6" stop-color="#d98a3d"/><stop offset="1" stop-color="#8a4a22"/></radialGradient>
-            <linearGradient id="gCyan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bff4fb"/><stop offset="1" stop-color="#6bd3e6"/></linearGradient>
-            <linearGradient id="gPink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb0e6"/><stop offset="1" stop-color="#e86fc4"/></linearGradient>
-            <radialGradient id="gFlash" cx=".5" cy=".45" r=".6"><stop offset="0" stop-color="#fff3dc"/><stop offset=".4" stop-color="#ff7a66"/><stop offset="1" stop-color="#ff7a66" stop-opacity="0"/></radialGradient>
-            <pattern id="pGrid" width="9" height="7" patternUnits="userSpaceOnUse"><rect width="9" height="7" fill="#f4ece4"/><path d="M0 .5H9M.5 0V7" stroke="#8d7d80" stroke-width="1"/></pattern>
-            <pattern id="pGridA" width="7" height="7" patternUnits="userSpaceOnUse"><rect width="7" height="7" fill="#ffc15e"/><path d="M0 .5H7M.5 0V7" stroke="#b86a22" stroke-width="1"/></pattern>
-            <pattern id="pLat" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="#7a1822"/><path d="M0 0H14M0 0V14" stroke="#e07a6a" stroke-width="1.4"/></pattern>
-            <clipPath id="cDome"><path d="M114,215 A86 86 0 0 1 286,215 Z"/></clipPath>
-            <filter id="blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter>
-            <filter id="blurS" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>
-          </defs>
-          <g class="svgwrap">
-            <!-- floor glow -->
-            <ellipse cx="200" cy="522" rx="150" ry="14" fill="#ff4d5e" opacity=".28" filter="url(#blur)"/>
-            <!-- soft glow layer (blurred copy of the tubes) -->
-            <g class="glow" filter="url(#blur)">
-              <path class="glowL" d="M68,470 V215 A132 132 0 0 1 332 215 V470" stroke="#ff7a66" stroke-width="30"/>
-              <path class="glowL" d="M92,470 V215 A108 108 0 0 1 308 215 V470" stroke="#ffc15e" stroke-width="22"/>
-            </g>
-            <!-- listening ripples -->
-            <path class="ripple r1" d="M68,470 V215 A132 132 0 0 1 332 215 V470"/>
-            <path class="ripple r2" d="M68,470 V215 A132 132 0 0 1 332 215 V470"/>
-            <!-- waveform ring -->
-            <g class="wv" id="wv"></g>
-            <!-- body behind the glass -->
-            <path d="M101,470 V215 A99 99 0 0 1 299 215 V470 Z" fill="url(#gBody)"/>
-            <!-- dome with spinning record/dial -->
-            <path d="M114,215 A86 86 0 0 1 286,215 Z" fill="url(#gDome)"/>
-            <g clip-path="url(#cDome)"><g class="dial" id="dial"></g></g>
-            <path d="M114,215 A86 86 0 0 1 286,215" fill="none" stroke="#3a2a30" stroke-width="4"/>
-            <!-- tubes -->
-            <path class="tube-out" d="M68,470 V215 A132 132 0 0 1 332 215 V470"/>
-            <path class="tube-in" d="M92,470 V215 A108 108 0 0 1 308 215 V470"/>
-            <path class="tube-core" d="M92,470 V215 A108 108 0 0 1 308 215 V470"/>
-            <!-- crown -->
-            <path d="M172,92 L180,64 H220 L228,92 Z" fill="#ff4d5e"/>
-            <path d="M166,96 L176,60 M234,96 L224,60" stroke="url(#gChrome)" stroke-width="6" stroke-linecap="round"/>
-            <rect x="188" y="72" width="24" height="5" rx="2" fill="#ffd9d0" opacity=".7"/>
-            <!-- collars -->
-            <g fill="url(#gChrome)" stroke="#5a1f2a" stroke-width="1">
-              <rect x="56" y="345" width="86" height="18" rx="3"/><rect x="258" y="345" width="86" height="18" rx="3"/>
-              <rect x="56" y="440" width="86" height="12" rx="3"/><rect x="258" y="440" width="86" height="12" rx="3"/>
-              <rect x="56" y="456" width="86" height="12" rx="3"/><rect x="258" y="456" width="86" height="12" rx="3"/>
-            </g>
-            <g fill="#ff6a5e" opacity=".8"><rect x="62" y="350" width="74" height="3"/><rect x="264" y="350" width="74" height="3"/><rect x="62" y="446" width="74" height="2"/><rect x="264" y="446" width="74" height="2"/></g>
-            <!-- selector band -->
-            <rect x="106" y="215" width="188" height="48" rx="7" fill="#2a1b20" stroke="url(#gChrome)" stroke-width="4"/>
-            <rect x="114" y="224" width="62" height="30" rx="3" fill="url(#pGrid)"/>
-            <rect x="178" y="224" width="44" height="30" rx="3" fill="url(#pGridA)"/>
-            <rect x="224" y="224" width="62" height="30" rx="3" fill="url(#pGrid)"/>
-            <!-- lower panels -->
-            <g class="panelL"><rect x="112" y="276" width="36" height="112" rx="7" fill="url(#gCyan)" opacity=".92"/><g class="eq" id="eqL"></g></g>
-            <g class="panelR"><rect x="252" y="276" width="36" height="112" rx="7" fill="url(#gCyan)" opacity=".92"/><g class="eq" id="eqR"></g></g>
-            <rect x="154" y="272" width="92" height="128" rx="6" fill="#2a1b20" stroke="url(#gChrome)" stroke-width="3"/>
-            <rect x="160" y="280" width="80" height="112" rx="3" fill="url(#pLat)"/>
-            <circle cx="200" cy="374" r="10" fill="#ff4d5e" stroke="#ffd9d0" stroke-width="2"/>
-            <g class="panelU">
-              <path d="M112,388 H148 V404 Q148,418 162,418 H238 Q252,418 252,404 V388 H288 V410 Q288,444 250,444 H150 Q112,444 112,410 Z" fill="url(#gPink)" opacity=".95"/>
-              <g class="eq" id="eqU"></g>
-            </g>
-            <!-- chrome feet -->
-            <g fill="url(#gChrome)" stroke="#3a2a30"><rect x="56" y="470" width="86" height="38" rx="5"/><rect x="258" y="470" width="86" height="38" rx="5"/></g>
-            <rect x="142" y="496" width="116" height="12" fill="#1a0a0e"/>
-            <!-- tool chase light -->
-            <g filter="url(#blurS)"><circle class="chaseT t2" r="9"/><circle class="chaseT t1" r="9"/><circle class="chase" r="14"/></g>
-            <circle class="chase" r="8" fill="#fff" stroke="#ff4d5e" stroke-width="3"/>
-            <!-- barge-in flash -->
-            <rect class="flashfx" x="-40" y="20" width="480" height="520" fill="url(#gFlash)"/>
-          </g>
-        </svg>
+  <!-- =================== STAGE =================== -->
+  <div class="view" id="vStage" role="tabpanel" aria-labelledby="tabStage">
+    <section class="left" aria-label="Agent state and latency">
+      <div class="card heroCard">
+        <div class="hero-badge" id="prevBadge" hidden>Animation preview · no conversation data</div>
+        <div class="previewRow" id="previewRow" hidden></div>
+        <div class="hero" id="hero" data-state="idle">
+          <div class="halo"></div>
+          <svg viewBox="0 0 400 650" role="img" aria-label="Neon jukebox that shows what the agent is doing" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id="gOut" gradientUnits="userSpaceOnUse" x1="0" y1="60" x2="0" y2="480"><stop offset="0" stop-color="#ff7a66"/><stop offset=".55" stop-color="#ff9a5e"/><stop offset="1" stop-color="#ffb35c"/></linearGradient>
+              <linearGradient id="gChrome" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9dfe0"/><stop offset=".45" stop-color="#7d6a70"/><stop offset=".6" stop-color="#3a2a30"/><stop offset="1" stop-color="#b9a9ae"/></linearGradient>
+              <linearGradient id="gBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a0f15"/><stop offset="1" stop-color="#14070a"/></linearGradient>
+              <radialGradient id="gDome" cx=".5" cy="1" r="1"><stop offset="0" stop-color="#ffd28a"/><stop offset=".6" stop-color="#d98a3d"/><stop offset="1" stop-color="#8a4a22"/></radialGradient>
+              <linearGradient id="gCyan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bff4fb"/><stop offset="1" stop-color="#6bd3e6"/></linearGradient>
+              <linearGradient id="gPink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb0e6"/><stop offset="1" stop-color="#e86fc4"/></linearGradient>
+              <radialGradient id="gFlash" cx=".5" cy=".45" r=".6"><stop offset="0" stop-color="#fff3dc"/><stop offset=".4" stop-color="#ff7a66"/><stop offset="1" stop-color="#ff7a66" stop-opacity="0"/></radialGradient>
+              <linearGradient id="gFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".4"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+              <mask id="mRef" maskUnits="userSpaceOnUse" x="0" y="520" width="400" height="130"><rect x="0" y="520" width="400" height="130" fill="url(#gFade)"/></mask>
+              <pattern id="pGrid" width="9" height="7" patternUnits="userSpaceOnUse"><rect width="9" height="7" fill="#f4ece4"/><path d="M0 .5H9M.5 0V7" stroke="#8d7d80" stroke-width="1"/></pattern>
+              <pattern id="pGridA" width="7" height="7" patternUnits="userSpaceOnUse"><rect width="7" height="7" fill="#ffc15e"/><path d="M0 .5H7M.5 0V7" stroke="#b86a22" stroke-width="1"/></pattern>
+              <pattern id="pLat" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="14" height="14" fill="#7a1822"/><path d="M0 0H14M0 0V14" stroke="#e07a6a" stroke-width="1.4"/></pattern>
+              <clipPath id="cDome"><path d="M114,215 A86 86 0 0 1 286,215 Z"/></clipPath>
+              <filter id="blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter>
+              <filter id="blurL" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="20"/></filter>
+              <filter id="blurS" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>
+            </defs>
+            <ellipse cx="200" cy="520" rx="170" ry="16" fill="#ff4d5e" opacity=".4" filter="url(#blur)"/>
+            <!-- floor reflection of the whole jukebox (shares the animations of the original) -->
+            <g mask="url(#mRef)"><use href="#jb" transform="translate(0,1030) scale(1,-1)"/></g>
+            <g id="jb"><g class="svgwrap">
+              <g class="glow">
+                <g filter="url(#blurL)"><path class="glowL" d="M68,470 V215 A132 132 0 0 1 332 215 V470" stroke="#ff4d5e" stroke-width="52" opacity=".7"/></g>
+                <g filter="url(#blur)">
+                  <path class="glowL" d="M68,470 V215 A132 132 0 0 1 332 215 V470" stroke="#ff7a66" stroke-width="32"/>
+                  <path class="glowL" d="M92,470 V215 A108 108 0 0 1 308 215 V470" stroke="#ffc15e" stroke-width="24"/>
+                </g>
+              </g>
+              <path class="ripple r1" d="M68,470 V215 A132 132 0 0 1 332 215 V470"/>
+              <path class="ripple r2" d="M68,470 V215 A132 132 0 0 1 332 215 V470"/>
+              <g class="wv" id="wv"></g>
+              <path d="M101,470 V215 A99 99 0 0 1 299 215 V470 Z" fill="url(#gBody)"/>
+              <path d="M114,215 A86 86 0 0 1 286,215 Z" fill="url(#gDome)"/>
+              <g clip-path="url(#cDome)"><g class="dial" id="dial"></g></g>
+              <path d="M114,215 A86 86 0 0 1 286,215" fill="none" stroke="#3a2a30" stroke-width="4"/>
+              <path class="tube-out" d="M68,470 V215 A132 132 0 0 1 332 215 V470"/>
+              <path class="tube-in" d="M92,470 V215 A108 108 0 0 1 308 215 V470"/>
+              <path class="tube-core" d="M92,470 V215 A108 108 0 0 1 308 215 V470"/>
+              <path d="M172,92 L180,64 H220 L228,92 Z" fill="#ff4d5e"/>
+              <path d="M166,96 L176,60 M234,96 L224,60" stroke="url(#gChrome)" stroke-width="6" stroke-linecap="round"/>
+              <rect x="188" y="72" width="24" height="5" rx="2" fill="#ffd9d0" opacity=".7"/>
+              <g fill="url(#gChrome)" stroke="#5a1f2a" stroke-width="1">
+                <rect x="56" y="345" width="86" height="18" rx="3"/><rect x="258" y="345" width="86" height="18" rx="3"/>
+                <rect x="56" y="440" width="86" height="12" rx="3"/><rect x="258" y="440" width="86" height="12" rx="3"/>
+                <rect x="56" y="456" width="86" height="12" rx="3"/><rect x="258" y="456" width="86" height="12" rx="3"/>
+              </g>
+              <g fill="#ff6a5e" opacity=".8"><rect x="62" y="350" width="74" height="3"/><rect x="264" y="350" width="74" height="3"/><rect x="62" y="446" width="74" height="2"/><rect x="264" y="446" width="74" height="2"/></g>
+              <rect x="106" y="215" width="188" height="48" rx="7" fill="#2a1b20" stroke="url(#gChrome)" stroke-width="4"/>
+              <rect x="114" y="224" width="62" height="30" rx="3" fill="url(#pGrid)"/>
+              <rect x="178" y="224" width="44" height="30" rx="3" fill="url(#pGridA)"/>
+              <rect x="224" y="224" width="62" height="30" rx="3" fill="url(#pGrid)"/>
+              <g class="panelL"><rect x="112" y="276" width="36" height="112" rx="7" fill="url(#gCyan)" opacity=".92"/><g class="eq" id="eqL"></g></g>
+              <g class="panelR"><rect x="252" y="276" width="36" height="112" rx="7" fill="url(#gCyan)" opacity=".92"/><g class="eq" id="eqR"></g></g>
+              <rect x="154" y="272" width="92" height="128" rx="6" fill="#2a1b20" stroke="url(#gChrome)" stroke-width="3"/>
+              <rect x="160" y="280" width="80" height="112" rx="3" fill="url(#pLat)"/>
+              <circle cx="200" cy="374" r="10" fill="#ff4d5e" stroke="#ffd9d0" stroke-width="2"/>
+              <g class="panelU">
+                <path d="M112,388 H148 V404 Q148,418 162,418 H238 Q252,418 252,404 V388 H288 V410 Q288,444 250,444 H150 Q112,444 112,410 Z" fill="url(#gPink)" opacity=".95"/>
+                <g class="eq" id="eqU"></g>
+              </g>
+              <g fill="url(#gChrome)" stroke="#3a2a30"><rect x="56" y="470" width="86" height="38" rx="5"/><rect x="258" y="470" width="86" height="38" rx="5"/></g>
+              <rect x="142" y="496" width="116" height="12" fill="#1a0a0e"/>
+              <g filter="url(#blurS)"><circle class="chaseT t2" r="9"/><circle class="chaseT t1" r="9"/><circle class="chase" r="14"/></g>
+              <circle class="chase" r="8" fill="#fff" stroke="#ff4d5e" stroke-width="3"/>
+              <rect class="flashfx" x="-40" y="20" width="480" height="520" fill="url(#gFlash)"/>
+            </g></g>
+          </svg>
+        </div>
+        <div class="stateLabel" aria-live="polite"><b id="stText"><em id="stIcon">◌</em><span id="stWord">Idle</span></b><span id="stSub"></span></div>
       </div>
-      <div class="stateLabel" aria-live="polite"><b id="stText"><em id="stIcon">◌</em><span id="stWord">Idle</span></b><span id="stSub"></span></div>
-      <div class="previewRow" id="previewRow" hidden></div>
-    </div>
 
-    <div class="card" aria-label="Latest turn latency">
-      <h2>Latest turn <span id="ltTurn" style="text-transform:none;letter-spacing:0"></span></h2>
-      <div class="tiles" id="tiles"></div>
-      <p class="sess" id="sess">No turns yet.</p>
-    </div>
-  </section>
+      <div class="card latCard" aria-label="Latest turn latency">
+        <h2 style="margin:0">Latest turn <span id="ltTurn" style="text-transform:none;letter-spacing:0"></span></h2>
+        <div class="tiles" id="tiles"></div>
+        <p class="sess" id="sess">No turns yet.</p>
+      </div>
+    </section>
 
-  <!-- ===== middle: live chat ===== -->
-  <section class="col" aria-label="Conversation">
-    <div class="card chatCard" id="chatCard">
-      <div class="chatHead"><h2 id="chatTitle">Live conversation</h2><span class="pill" id="chatSrc" data-k="waiting" style="font-size:.8rem;padding:.1rem .6rem">…</span></div>
+    <section class="card chatCard" id="chatCard" aria-label="Conversation">
+      <div class="chatHead"><h2 id="chatTitle">Live conversation</h2><span class="pill" id="chatSrc" data-k="waiting" style="font-size:var(--t-1);padding:.05rem .6rem">…</span></div>
       <div class="replayBar" id="replayBar">
         <b id="replayLabel">REPLAY</b>
         <button class="btn" id="rpPlay">Pause</button><button class="btn" id="rpRestart">Restart</button><button class="btn" id="rpSpeed">1×</button><button class="btn" id="rpExit">Back to live</button>
         <progress id="rpProg" value="0" max="1" aria-label="Replay progress"></progress>
       </div>
       <ol id="feed" role="log" aria-live="polite" aria-label="Conversation events"></ol>
-    </div>
-  </section>
+    </section>
+  </div>
 
-  <!-- ===== right: metrics ===== -->
-  <section class="col" aria-label="Metrics">
-    <div class="card benchCard">
+  <!-- =================== NUMBERS =================== -->
+  <div class="view" id="vNum" role="tabpanel" aria-labelledby="tabNum" hidden>
+    <section class="card benchCard" aria-label="Benchmark versus targets">
       <h2>Benchmark vs targets</h2>
-      <table aria-label="Class benchmark results against targets">
-        <thead><tr><th>Metric</th><th>Mean</th><th style="text-align:right">Target</th></tr></thead>
-        <tbody id="bench"></tbody>
-      </table>
+      <div class="brows" id="brows"></div>
+      <p class="legend" id="benchLegend"></p>
       <p class="src" id="benchSrc"></p>
-    </div>
-    <div class="card tabsCard">
-      <div role="tablist" aria-label="More metrics">
-        <button role="tab" id="tab0" aria-selected="true" aria-controls="pan0">Robustness</button>
-        <button role="tab" id="tab1" aria-selected="false" aria-controls="pan1" tabindex="-1">Before → after</button>
-        <button role="tab" id="tab2" aria-selected="false" aria-controls="pan2" tabindex="-1">Tools on</button>
-      </div>
-      <div role="tabpanel" id="pan0" aria-labelledby="tab0"></div>
-      <div role="tabpanel" id="pan1" aria-labelledby="tab1" hidden></div>
-      <div role="tabpanel" id="pan2" aria-labelledby="tab2" hidden></div>
-    </div>
-  </section>
+    </section>
+    <section class="card robCard" aria-label="Robustness">
+      <h2>Robustness: can the agent hear itself?</h2>
+      <div class="rbars" id="rbars"></div>
+      <div class="big0"><b>0</b><span id="phantom"></span></div>
+      <p class="src" id="robSrc"></p>
+    </section>
+    <div class="strip" id="strip"></div>
+  </div>
 </main>
 
 <script>
@@ -380,40 +391,40 @@ const BENCH = {
   source: "Class benchmark (fdbench), tools OFF · run 2026-11-21_04-16-23 · 10 phrases × 3 runs (n=30; barge-in n=2) · E2E counted from VAD end.",
   note: "Earlier run (02:24): barge-in 0.59 s (n=2), WER 4.2 %.",
   rows: [
-    {k:"e2e",  name:"End-to-end",       def:"end of speech → audio out", target:4.0, mean:2.19, p95:2.81, n:30, unit:"s"},
-    {k:"asr",  name:"ASR final",        def:"end of speech → transcript",  target:0.8, mean:0.31, p95:0.34, n:30, unit:"s"},
-    {k:"llm",  name:"LLM first token",  def:"transcript → first token",    target:1.5, mean:1.20, p95:1.61, n:30, unit:"s"},
-    {k:"tts",  name:"TTS first audio",  def:"text → first audio chunk",    target:0.6, mean:0.41, p95:0.36, n:30, unit:"s"},
-    {k:"barge",name:"Barge-in",         def:"speech → playback stopped",   target:0.8, mean:0.94, p95:1.24, n:2,  unit:"s"},
-    {k:"wer",  name:"WER",              def:"ASR accuracy on test set",    target:15,  mean:9.8,  p95:null, n:30, unit:"%"}
+    {k:"e2e",  name:"End-to-end",       sub:"speech end → audio out", target:4.0, mean:2.19, p95:2.81, n:30, unit:"s"},
+    {k:"asr",  name:"ASR final",        sub:"speech end → transcript", target:0.8, mean:0.31, p95:0.34, n:30, unit:"s"},
+    {k:"llm",  name:"LLM first token",  sub:"transcript → 1st token",  target:1.5, mean:1.20, p95:1.61, n:30, unit:"s"},
+    {k:"tts",  name:"TTS first audio",  sub:"text → 1st audio chunk",  target:0.6, mean:0.41, p95:0.36, n:30, unit:"s"},
+    {k:"barge",name:"Barge-in",         sub:"speech → playback stops", target:0.8, mean:0.94, p95:1.24, n:2,  unit:"s"},
+    {k:"wer",  name:"WER",              sub:"ASR accuracy, test set",  target:15,  mean:9.8,  p95:null, n:30, unit:"%"}
   ]
 };
 const ROBUST = {
-  source: "Measured on the Pi with the agent's own voice and a fan running; the venue check (scripts/echo_check.sh) finds the safe level in about a minute.",
+  source: "Measured on the Pi with the agent's own voice and a fan running; scripts/echo_check.sh finds the safe speaker level in the venue in about a minute.",
   threshold: 0.8,
   bars: [
     {label:"Fan alone", v:0.05, ok:true, note:"safe"},
-    {label:"Own voice @ 80 %", v:0.17, ok:true, note:"safe (default)"},
-    {label:"Own voice @ 90 %", v:0.90, ok:false, note:"self-interrupts"}
+    {label:"Agent's own voice, speaker at 80 %", v:0.17, ok:true, note:"safe (default)"},
+    {label:"Agent's own voice, speaker at 90 %", v:0.90, ok:false, note:"interrupts itself"}
   ],
-  phantom: "0 phantom turns in the live run with the fan on."
+  phantom: "phantom turns in the live run with the fan on."
 };
 const BEFORE_AFTER = {
   source: "Challenges table of the deck; each pair was measured before and after the fix.",
   rows: [
     {name:"WER (class benchmark, earlier run)", before:"21.3 %", after:"4.2 %", why:"900 ms audio pre-roll"},
-    {name:"ASR final", before:"2.6 s", after:"0.3 s", why:"streaming ASR over a warm websocket"},
+    {name:"ASR final", before:"2.6 s", after:"0.3 s", why:"streaming ASR, warm websocket"},
     {name:"TTS first audio", before:"1.4 s", after:"0.3 s", why:"pre-warmed connection"},
-    {name:"Past-date eval (news questions)", before:"0 / 10", after:"10 / 10", why:"past dates tagged in code"}
+    {name:"Past-date eval (news)", before:"0 / 10", after:"10 / 10", why:"past dates tagged in code"}
   ]
 };
 const TOOLS_ON = {
   source: "Live testing with tools ON. Not part of the class benchmark.",
   items: [
-    "Plain turn: first sound about 2.0 to 2.6 s after the end of speech.",
-    "Search turn: spoken holding phrase at about 2.4 s, full answer at about 5 to 8 s.",
+    "Plain turn: first sound about 2.0 to 2.6 s after end of speech.",
+    "Search turn: holding phrase at about 2.4 s, full answer at about 5 to 8 s.",
     "Slow-connection line fired live on a real 5 s LLM stall (guard at 3 s).",
-    "Add the 0.45 s end-of-speech wait for the delay a person feels."
+    "Add the 0.45 s end-of-speech wait for what a person feels."
   ]
 };
 const TARGET_MS = {asr:800, llm:1500, tts:600, e2e:4000};
@@ -431,6 +442,22 @@ function sv(tag, attrs, parent){ const e=document.createElementNS(SVGNS, tag); f
 function store(k, v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k, v); }catch(e){ return null; } }
 const sec = ms => (ms/1000).toFixed(2) + " s";
 function median(a){ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y), m=s.length>>1; return s.length%2? s[m] : (s[m-1]+s[m])/2; }
+
+/* ===================== views ===================== */
+let view = "stage";
+const feed = $("feed");
+let pinned = true;
+function toBottom(){ if(pinned && view==="stage") feed.scrollTop = feed.scrollHeight; }
+function setView(v){
+  view = v; $("vStage").hidden = v!=="stage"; $("vNum").hidden = v!=="num";
+  [["tabStage","stage"],["tabNum","num"]].forEach(([id,k])=>{ $(id).setAttribute("aria-selected", k===v); $(id).tabIndex = k===v?0:-1; });
+  if(v==="stage"){ pinned=true; toBottom(); }
+}
+$("tabStage").addEventListener("click",()=>setView("stage")); $("tabNum").addEventListener("click",()=>setView("num"));
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey||/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if(e.key==="1") setView("stage"); else if(e.key==="2") setView("num"); else if(e.key==="v"||e.key==="V") setView(view==="stage"?"num":"stage");
+});
 
 /* ===================== hero ===================== */
 const hero = $("hero");
@@ -472,62 +499,59 @@ function flashHero(){ hero.classList.remove("flash"); void hero.offsetWidth; her
   $("btnPreview").addEventListener("click",()=>{
     const on = $("btnPreview").getAttribute("aria-pressed")!=="true";
     $("btnPreview").setAttribute("aria-pressed",on); row.hidden=!on; $("prevBadge").hidden=!on;
+    if(on) setView("stage");
     previewState = on ? (previewState||"listening") : null; paintHero();
   });
 })();
 
-/* ===================== static metric panels ===================== */
-function benchStatus(r){ return r.mean <= r.target; }
+/* ===================== NUMBERS view ===================== */
 function fmt(r,v){ return r.unit==="%" ? v.toFixed(1)+" %" : v.toFixed(2)+" s"; }
-(function buildMetrics(){
-  const tb = $("bench");
+(function buildNumbers(){
+  const rows = $("brows");
   BENCH.rows.forEach(r=>{
-    const ok = benchStatus(r), tr = el("tr");
-    const n = el("td","n"); n.append(r.name); n.title=r.def; n.appendChild(el("small",null,({e2e:"speech end → audio",asr:"speech end → text",llm:"text → 1st token",tts:"text → 1st audio",barge:"speech → stop",wer:"test-set accuracy"})[r.k])); tr.appendChild(n);
-    const v = el("td","val"); v.style.color = ok?"var(--good)":"var(--miss)"; v.append(fmt(r,r.mean));
-    const extra = (r.p95!=null ? "p95 "+fmt(r,r.p95)+" · " : "") + "n="+r.n; v.appendChild(el("small",null,extra)); tr.appendChild(v);
-    const st = el("td","st"); const b = el("span","badge "+(ok?"ok":"miss"), (ok?"✓ PASS":"✕ MISS")); b.setAttribute("aria-label",(ok?"Pass":"Miss")+", target under "+fmt(r,r.target));
-    st.appendChild(b); st.appendChild(el("small",null,"")); const tg = el("div",null,"< "+fmt(r,r.target)); tg.style.cssText="font-size:.78rem;color:var(--muted);margin-top:.1rem"; st.appendChild(tg);
-    tr.appendChild(st); tb.appendChild(tr);
+    const ok = r.mean <= r.target, max = Math.max(r.target*1.6, r.mean*1.08, (r.p95||0)*1.08);
+    const row = el("div","brow "+(ok?"ok":"miss"));
+    const nm = el("div","nm",r.name); nm.appendChild(el("small",null,r.sub)); row.appendChild(nm);
+    const tr = el("div","track"); const f = el("i"); f.style.width=(r.mean/max*100)+"%"; tr.appendChild(f);
+    if(r.p95!=null){ const p=el("u"); p.style.left=(r.p95/max*100)+"%"; p.title="p95 "+fmt(r,r.p95); tr.appendChild(p); }
+    const t = el("s"); t.style.left=(r.target/max*100)+"%"; t.title="target "+fmt(r,r.target); tr.appendChild(t); row.appendChild(tr);
+    const v = el("div","val",fmt(r,r.mean)); v.appendChild(el("small",null,(r.p95!=null?"p95 "+fmt(r,r.p95)+" · ":"")+"n="+r.n)); row.appendChild(v);
+    const st = el("div"); const b = el("span","badge "+(ok?"ok":"miss"),ok?"✓ PASS":"✕ MISS"); b.setAttribute("aria-label",(ok?"Pass":"Miss")+", target under "+fmt(r,r.target));
+    st.appendChild(b); st.appendChild(el("span","tgt","target < "+fmt(r,r.target))); row.appendChild(st);
+    rows.appendChild(row);
   });
+  $("benchLegend").textContent = "Bar = mean. White line = target. Thin tick = p95.";
   $("benchSrc").textContent = BENCH.source + " " + BENCH.note;
 
-  // robustness
-  const p0 = $("pan0"); const bars = el("div","bars");
+  const rb = $("rbars");
   ROBUST.bars.forEach(b=>{
-    const r = el("div","br "+(b.ok?"ok":"miss")); r.appendChild(el("span",null,b.label));
-    const t = el("div","t"); const i = el("i"); i.style.width=(b.v*100)+"%"; t.appendChild(i);
-    const th = el("s"); th.style.left=(ROBUST.threshold*100)+"%"; t.appendChild(th); r.appendChild(t);
-    r.appendChild(el("span","num",(b.ok?"✓ ":"✕ ")+b.v.toFixed(2))); r.title=b.note; bars.appendChild(r);
-    r.firstChild.textContent = b.label;
+    const d = el("div","rb "+(b.ok?"ok":"miss")); const top = el("div","top");
+    top.appendChild(el("span",null,b.label+" · "+b.note)); top.appendChild(el("b",null,(b.ok?"✓ ":"✕ ")+b.v.toFixed(2)));
+    d.appendChild(top); const tr = el("div","track"); const i = el("i"); i.style.width=(b.v*100)+"%"; tr.appendChild(i);
+    const s = el("s"); s.style.left=(ROBUST.threshold*100)+"%"; tr.appendChild(s); d.appendChild(tr); rb.appendChild(d);
   });
-  p0.appendChild(el("p","src","VAD confidence of the speaker audio. White line = threshold " + ROBUST.threshold + "."));
-  p0.appendChild(bars);
-  const z = el("div","big0"); z.appendChild(el("b",null,"0")); z.appendChild(el("span",null,ROBUST.phantom)); p0.appendChild(z);
-  p0.appendChild(el("p","src",ROBUST.source));
+  const thr = el("div","thr"); const sp = el("span",null,"VAD threshold "+ROBUST.threshold); sp.style.left=(ROBUST.threshold*100)+"%"; thr.appendChild(sp); rb.appendChild(thr);
+  $("phantom").textContent = ROBUST.phantom; $("robSrc").textContent = ROBUST.source;
 
-  // before / after
-  const p1 = $("pan1"), ba = el("div","ba");
-  BEFORE_AFTER.rows.forEach(r=>{ const d=el("div"); const l=el("span",null,r.name); l.appendChild(el("small",null,"")); l.appendChild(document.createElement("br")); const w=el("span",null,r.why); w.style.cssText="font-size:.78rem;color:var(--muted)"; l.appendChild(w); d.appendChild(l);
-    const x=el("span","x"); x.appendChild(el("i",null,r.before)); x.appendChild(el("em",null,"→")); x.appendChild(el("u",null,r.after)); d.appendChild(x); ba.appendChild(d); });
-  p1.appendChild(ba); p1.appendChild(el("p","src",BEFORE_AFTER.source));
-
-  // tools on
-  const p2=$("pan2"), ul=el("ul","plain"); TOOLS_ON.items.forEach(t=>ul.appendChild(el("li",null,t))); p2.appendChild(ul); p2.appendChild(el("p","src",TOOLS_ON.source));
-
-  // tabs
-  const tabs=[...document.querySelectorAll("[role=tab]")];
-  function pick(i){ tabs.forEach((t,j)=>{ t.setAttribute("aria-selected",j===i); t.tabIndex=j===i?0:-1; $(t.getAttribute("aria-controls")).hidden=j!==i; }); tabs[i].focus(); }
-  tabs.forEach((t,i)=>{ t.addEventListener("click",()=>pick(i)); t.addEventListener("keydown",e=>{ if(e.key==="ArrowRight") pick((i+1)%3); if(e.key==="ArrowLeft") pick((i+2)%3); }); });
+  const strip = $("strip");
+  BEFORE_AFTER.rows.forEach(r=>{
+    const c = el("div","card ba"); c.appendChild(el("div","nm",r.name));
+    const x = el("div","x"); x.appendChild(el("i",null,r.before)); x.appendChild(el("em",null,"→")); x.appendChild(el("u",null,r.after)); c.appendChild(x);
+    c.appendChild(el("div","why",r.why)); strip.appendChild(c);
+  });
+  const tc = el("div","card"); tc.appendChild(el("h2",null,"Tools on (live testing)")); const ul = el("ul","plain");
+  TOOLS_ON.items.forEach(t=>ul.appendChild(el("li",null,t))); tc.appendChild(ul); strip.appendChild(tc);
 })();
 
 /* ===================== live latency tiles + session stats ===================== */
 const TILE_DEF = [["asr","ASR final"],["llm","LLM first token"],["tts","TTS first audio"],["e2e","End-to-end"]];
 const tileEls = {};
-(function(){ const t=$("tiles"); TILE_DEF.forEach(([k,l])=>{ const d=el("div","tile"); const v=el("span","v","—"), lab=el("span","l",l), m=el("span","m"," "); d.append(v,lab,m); t.appendChild(d); tileEls[k]={d,v,m}; }); })();
+(function(){ const t=$("tiles"); TILE_DEF.forEach(([k,l])=>{ const d=el("div","tile"); const lab=el("span","l",l), v=el("span","v","—"), m=el("span","m"," ");
+  const tb=el("div","tb"); const fi=el("i"), tg=el("s"); tb.append(fi,tg); d.append(lab,v,m,tb); t.appendChild(d); tileEls[k]={d,v,m,fi}; }); })();
 function setTile(k, ms){
-  const t = tileEls[k]; if(ms==null){ t.v.textContent="—"; t.m.textContent=" "; t.d.className="tile"; return; }
-  const ok = ms <= TARGET_MS[k]; t.v.textContent = sec(ms); t.m.textContent = (ok ? "✓ " : "✕ ") + "< "+sec(TARGET_MS[k]); t.d.className = "tile " + (ok?"ok":"miss");
+  const t = tileEls[k]; if(ms==null){ t.v.textContent="—"; t.m.textContent=" "; t.d.className="tile"; t.fi.style.width="0"; return; }
+  const ok = ms <= TARGET_MS[k]; t.v.textContent = sec(ms); t.m.textContent = (ok ? "✓ " : "✕ ") + "target < "+sec(TARGET_MS[k]); t.d.className = "tile " + (ok?"ok":"miss");
+  t.fi.style.width = Math.min(100, ms/(2*TARGET_MS[k])*100) + "%";
 }
 const sessions = new Map();
 function sessStats(id){ if(!sessions.has(id)) sessions.set(id,{plain:[],tool:[]}); return sessions.get(id); }
@@ -536,26 +560,20 @@ function paintSess(){
   const s = lastSession!=null ? sessions.get(lastSession) : null;
   if(!s || (!s.plain.length && !s.tool.length)){ $("sess").textContent = "No agent replies measured yet in this session."; return; }
   const p = median(s.plain), t = median(s.tool);
-  $("sess").textContent = "This session (from events): " +
-    (s.plain.length ? "plain turns "+s.plain.length+", median E2E "+sec(p) : "no plain turns yet") + " · " +
+  $("sess").textContent = "This session: " + (s.plain.length ? "plain turns "+s.plain.length+", median E2E "+sec(p) : "no plain turns yet") + " · " +
     (s.tool.length ? "tool turns "+s.tool.length+", median E2E "+sec(t) : "no tool turns yet") + ". Tool turns are slower and not part of the benchmark.";
 }
 paintSess();
 
 /* ===================== chat feed ===================== */
-const feed = $("feed");
-let pinned = true;
 feed.addEventListener("scroll",()=>{ pinned = feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 40; });
-function toBottom(){ if(pinned) feed.scrollTop = feed.scrollHeight; }
 const turns = new Map(), toolRows = new Map();
 let emptyEl = null;
-function showEmpty(title, text){
-  clearEmpty(); emptyEl = el("li","empty"); emptyEl.appendChild(el("b",null,title)); emptyEl.appendChild(el("span",null,text)); feed.appendChild(emptyEl);
-}
+function showEmpty(title, text){ clearEmpty(); emptyEl = el("li","empty"); emptyEl.appendChild(el("b",null,title)); emptyEl.appendChild(el("span",null,text)); feed.appendChild(emptyEl); }
 function clearEmpty(){ if(emptyEl){ emptyEl.remove(); emptyEl=null; } }
 function resetView(){
   feed.textContent=""; turns.clear(); toolRows.clear(); sessions.clear(); lastSession=null; emptyEl=null; seen.clear();
-  TILE_DEF.forEach(([k])=>setTile(k,null)); $("ltTurn").textContent=""; lastTurnKey=null; paintSess();
+  TILE_DEF.forEach(([k])=>setTile(k,null)); $("ltTurn").textContent=""; paintSess();
   heroBase="idle"; musicTitle=""; musicDucked=false; toolName=""; paintHero(); pinned=true;
 }
 function chip(label, ms, key){
@@ -568,8 +586,8 @@ function getTurn(ev){
   const key = (ev.session!=null?ev.session:"s")+"#"+(ev.turn!=null?ev.turn:"0");
   let t = turns.get(key);
   if(!t){ clearEmpty();
-    const li = el("li","turn"); const h = el("div","turnH","Turn "+(ev.turn!=null?ev.turn:"?")); li.appendChild(h); feed.appendChild(li);
-    t = {li, h, vals:{}, tools:0}; turns.set(key,t); }
+    const li = el("li","turn"); li.appendChild(el("div","turnH","Turn "+(ev.turn!=null?ev.turn:"?"))); feed.appendChild(li);
+    t = {li, tools:0}; turns.set(key,t); }
   lastTurnKey = key; lastSession = ev.session!=null?ev.session:"s"; $("ltTurn").textContent = "· turn "+(ev.turn!=null?ev.turn:"?");
   return t;
 }
@@ -578,7 +596,7 @@ function msg(kind, who, text, chips){
   const d = el("div","row msg "+kind); d.appendChild(el("span","who",who)); d.appendChild(document.createTextNode(text));
   if(chips.length){ const c=el("div","chips"); chips.forEach(x=>c.appendChild(x)); d.appendChild(c); } return d;
 }
-function evt(cls, ic, parts){ const d=el("div","row evt "+cls); d.appendChild(el("i","ic",ic)); parts.forEach(p=>d.appendChild(typeof p==="string"?document.createTextNode(p):p)); return d; }
+function evt(cls, ic, parts){ const d=el("div","evt "+cls); d.appendChild(el("i","ic",ic)); parts.forEach(p=>d.appendChild(typeof p==="string"?document.createTextNode(p):p)); return d; }
 function q(text){ return el("span","q","“"+text+"”"); }
 
 function ingest(ev){
@@ -586,7 +604,7 @@ function ingest(ev){
   switch(ev.type){
     case "state": setHeroState(ev.state); if(ev.state!=="tool") toolName=""; paintHero(); break;
     case "user": {
-      const t = getTurn(ev), chips=[]; if(typeof ev.asr_ms==="number"){ chips.push(chip("ASR final",ev.asr_ms,"asr")); t.vals.asr=ev.asr_ms; setTile("asr",ev.asr_ms); }
+      const t = getTurn(ev), chips=[]; if(typeof ev.asr_ms==="number"){ chips.push(chip("ASR final",ev.asr_ms,"asr")); setTile("asr",ev.asr_ms); }
       addRow(t, msg("user","You",String(ev.text||""),chips)); break; }
     case "agent": {
       const t = getTurn(ev), chips=[];
@@ -599,9 +617,9 @@ function ingest(ev){
     case "tool": {
       const t = getTurn(ev), id = lastTurnKey+":"+ev.name; let r = toolRows.get(id);
       if(ev.phase==="start"){ t.tools++; toolName = ev.name||"tool"; paintHero();
-        r = evt("tool","⚙",[ "Tool call ", el("b",null,String(ev.name||"?")), el("span","spin") ]); r.dataset.name=String(ev.name||"?"); toolRows.set(id,r); addRow(t,r); }
-      else { if(!r){ t.tools++; r = el("div","row evt tool"); toolRows.set(id,r); addRow(t,r); }
-        r.textContent=""; r.className="row evt tool"; r.appendChild(el("i","ic","✓")); r.appendChild(document.createTextNode("Tool "));
+        r = evt("tool","⚙",[ "Tool call ", el("b",null,String(ev.name||"?")), el("span","spin") ]); toolRows.set(id,r); addRow(t,r); }
+      else { if(!r){ t.tools++; r = el("div","evt tool"); toolRows.set(id,r); addRow(t,r); }
+        r.textContent=""; r.className="evt tool"; r.appendChild(el("i","ic","✓")); r.appendChild(document.createTextNode("Tool "));
         r.appendChild(el("b",null,String(ev.name||"?"))); r.appendChild(document.createTextNode(typeof ev.ms==="number" ? " finished in "+sec(ev.ms) : " finished")); toBottom(); }
       break; }
     case "interrupt": { const t=getTurn(ev); flashHero(); addRow(t, evt("int","⚡",["Interrupted by the user (barge-in)"])); break; }
@@ -654,7 +672,7 @@ async function startLive(){
 hostIn.addEventListener("change",()=>{ hostVal=hostIn.value.trim()||hostVal; store("kuya.host",hostVal); backoff=1000; everLive=false; if(mode==="live"){ resetView(); setStatus("waiting"); startLive(); } });
 
 /* ===================== REPLAY of a recorded real session ===================== */
-let rp = null;   // {events, i, timer, speed, paused, label}
+let rp = null;
 const menu=$("menu"), mMsg=$("mMsg");
 function closeMenu(){ menu.classList.remove("open"); $("btnReplay").setAttribute("aria-expanded","false"); }
 $("btnReplay").addEventListener("click",()=>{ const o=!menu.classList.contains("open"); menu.classList.toggle("open",o); $("btnReplay").setAttribute("aria-expanded",o); mMsg.textContent=""; if(o) $("mFile").focus(); });
@@ -670,7 +688,7 @@ function normalise(data){
 }
 function startReplay(data, dateHint, name){
   let n; try{ n = normalise(data); }catch(e){ mMsg.textContent = e.message; return; }
-  stopLive(); mode="replay"; resetView(); closeMenu();
+  stopLive(); mode="replay"; resetView(); closeMenu(); setView("stage");
   const d = n.date || dateHint || "date unknown";
   rp = {events:n.events, i:0, timer:null, speed:1, paused:false, label:"REPLAY of a recorded real session, "+d+(name?" ("+name+")":"")};
   $("chatCard").classList.add("isReplay"); $("replayLabel").textContent = rp.label; $("rpSpeed").textContent="1×"; $("rpPlay").textContent="Pause";
@@ -707,11 +725,10 @@ $("mPi").addEventListener("click",async()=>{
   try{ const r=await fetch(hostUrl("/sessions"),{cache:"no-store"}); if(!r.ok) throw new Error("HTTP "+r.status); let L=await r.json(); if(L && !Array.isArray(L)) L = L.sessions||Object.keys(L);
     if(!L||!L.length){ mMsg.textContent="The Pi has no recorded sessions yet."; return; } mMsg.textContent="Pick one:";
     L.slice(-12).reverse().forEach(s=>{ const id=typeof s==="object"?(s.id||s.session||s.name):s; const date=typeof s==="object"?(s.date||s.started||s.recorded||null):null;
-      const b=el("button","btn", String(id)+(date?" · "+date:"")+(typeof s==="object"&&s.turns!=null?" · "+s.turns+" turns":"")); li(ul,b);
+      const b=el("button","btn", String(id)+(date?" · "+date:"")+(typeof s==="object"&&s.turns!=null?" · "+s.turns+" turns":"")); const l=document.createElement("li"); l.appendChild(b); ul.appendChild(l);
       b.addEventListener("click",()=>loadUrl(hostUrl("/replay?session="+encodeURIComponent(id)), String(id), date?String(date).slice(0,10):null)); });
   }catch(e){ mMsg.textContent="The Pi is not reachable at "+hostVal+"."; }
 });
-function li(ul,b){ const l=document.createElement("li"); l.appendChild(b); ul.appendChild(l); }
 
 /* ===================== display options ===================== */
 function setHC(on){ document.documentElement.classList.toggle("hc",on); $("btnHC").setAttribute("aria-pressed",on); store("kuya.hc",on?"1":"0"); }
