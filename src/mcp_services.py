@@ -18,6 +18,7 @@ from pipecat.services.tts_service import TTSService
 from pipecat.transcriptions.language import Language
 from pipecat.utils.time import time_now_iso8601
 
+from src.echo import is_echo, note_bot_text
 from src.mcp_conn import McpConn
 
 ASR_URL = "http://127.0.0.1:8101/mcp"
@@ -109,6 +110,9 @@ class McpSTT(STTService):
                 logger.error(f"asr_finish failed: {e}")
                 return
         logger.info(f"[stt] final transcript: {text!r}")
+        if text and is_echo(text):
+            logger.info(f"[stt] dropped as echo of the agent's own speech: {text!r}")
+            return
         if text:
             await self.push_frame(
                 TranscriptionFrame(text, "", time_now_iso8601(), Language.EN, finalized=True)
@@ -149,6 +153,7 @@ class McpTTS(TTSService):
             r = json.loads(await self._conn.call("speak_next", {"job_id": job}))
 
     async def run_tts(self, text: str, context_id: str) -> AsyncGenerator[Frame | None, None]:
+        note_bot_text(text)  # remembered so the echo filter can recognise our own voice coming back via the mic
         try:
             async for frame in self._stream_audio_frames_from_iterator(
                 self._chunks(text), in_sample_rate=24000, context_id=context_id

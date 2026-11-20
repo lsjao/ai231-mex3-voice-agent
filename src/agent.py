@@ -21,6 +21,7 @@ from pipecat.pipeline.worker import PipelineParams, PipelineWorker
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair, LLMUserAggregatorParams
 from pipecat.services.mcp_service import MCPClient
+from pipecat.turns.user_mute.function_call_user_mute_strategy import FunctionCallUserMuteStrategy
 from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.transports.base_transport import TransportParams
 from mcp.client.session_group import StreamableHttpParameters
@@ -89,6 +90,9 @@ async def make_pipeline(transport):
         context,
         user_params=LLMUserAggregatorParams(
             vad_analyzer=SileroVADAnalyzer(params=VADParams(confidence=VAD_CONF, start_secs=VAD_START, stop_secs=STOP_SECS)),
+            # While a tool runs the agent is mostly silent or playing its own holding phrase: ignore the mic then, so
+            # leaked echo of that phrase cannot start phantom turns.
+            user_mute_strategies=[FunctionCallUserMuteStrategy()],
         ),
     )
     pipeline = Pipeline([
