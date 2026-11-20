@@ -40,6 +40,39 @@ async def _search(key: str, query: str, topic: str, time_range: str | None, deep
     return r.json()
 
 
+MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july", "august",
+                                      "september", "october", "november", "december"], 1)}
+_MON = "|".join(MONTHS)
+DATE_PATTERNS = [  # (regex, how to read the groups)
+    (re.compile(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+({_MON})\s*,?\s+(\d{{4}})\b", re.I), "dmy"),
+    (re.compile(rf"\b({_MON})\s+(\d{{1,2}})(?:st|nd|rd|th)?\s*,?\s+(\d{{4}})\b", re.I), "mdy"),
+    (re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b"), "iso"),
+]
+
+
+def tag_past_dates(text: str, today: datetime.date | None = None) -> str:
+    """Add '(already in the past)' after any full date in the text that is earlier than today. Small models are poor at
+    comparing dates, and a past date presented as 'upcoming' sounds confidently wrong, so we do the comparison in code."""
+    today = today or datetime.date.today()
+    hits = []
+    for rx, kind in DATE_PATTERNS:
+        for m in rx.finditer(text):
+            try:
+                if kind == "dmy":
+                    d = datetime.date(int(m.group(3)), MONTHS[m.group(2).lower()], int(m.group(1)))
+                elif kind == "mdy":
+                    d = datetime.date(int(m.group(3)), MONTHS[m.group(1).lower()], int(m.group(2)))
+                else:
+                    d = datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+            except ValueError:
+                continue
+            if d < today:
+                hits.append(m.end())
+    for pos in sorted(set(hits), reverse=True):
+        text = text[:pos] + " (already in the past)" + text[pos:]
+    return text
+
+
 @mcp.tool()
 async def web_search(query: str) -> str:
     """Search the web for current information (news, facts, recent events). Always returns the MOST RECENT
@@ -62,7 +95,7 @@ async def web_search(query: str) -> str:
         title, snippet = clean(item.get("title", "")), clean(item.get("content", ""))[:100]
         if title:
             parts.append(f"{title}: {snippet}" if snippet else title)
-    return " ".join(parts)[:550] or "I found nothing useful for that search."
+    return tag_past_dates(" ".join(parts))[:600] or "I found nothing useful for that search."
 
 
 if __name__ == "__main__":

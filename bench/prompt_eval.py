@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 load_dotenv(ROOT / ".env")
 from src.agent import load_prompt  # noqa: E402
+from mcp_servers.search_mcp import tag_past_dates  # noqa: E402  (production tool results pass through this)
 
 KEY = os.environ["OPENROUTER_API_KEY"]
 MODEL = os.environ.get("LLM_MODEL", "openai/gpt-4.1-mini")
@@ -82,7 +83,8 @@ def run_once(client, system, user, tool_result):
     if calls:
         msgs.append({"role": "assistant", "content": m.get("content"), "tool_calls": calls})
         for c in calls:
-            msgs.append({"role": "tool", "tool_call_id": c["id"], "content": tool_result or "No results."})
+            msgs.append({"role": "tool", "tool_call_id": c["id"],
+                         "content": tag_past_dates(tool_result) if tool_result else "No results."})
         final = (chat(client, msgs).get("content") or "").strip()
     return called, first_text, final
 
