@@ -3,6 +3,9 @@
 # Safe to run repeatedly. Logs go to ~/mex3/logs/. Used at boot via cron @reboot and before demos.
 cd "$HOME/mex3" || exit 1
 mkdir -p logs
+# ALSA levels reset on every reboot on this Pi: re-apply them (no sudo needed). Speaker 90%, mic 65% (100% clips).
+amixer -c Headphones sset PCM 90% >/dev/null 2>&1 && echo "speaker PCM -> 90%" || echo "WARN: could not set speaker volume"
+amixer -c Microphone sset Mic 65% >/dev/null 2>&1 && echo "mic gain -> 65%" || echo "WARN: could not set mic gain"
 start() {  # name script port
   if ss -ltn | grep -q "127.0.0.1:$3 "; then echo "$1 already up"; return; fi
   nohup .venv/bin/python "mcp_servers/$2.py" >> "logs/$1.log" 2>&1 &
