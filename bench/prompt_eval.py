@@ -28,7 +28,7 @@ YEAR = str(__import__("datetime").datetime.now().year)
 TOOLS = [
     {"type": "function", "function": {"name": "get_weather", "description": "Get the current weather and today's outlook for a city.",
                                       "parameters": {"type": "object", "properties": {"city": {"type": "string"}}, "required": ["city"]}}},
-    {"type": "function", "function": {"name": "web_search", "description": "Search the web for current information (news, facts, recent events). Always returns the most recent information available.",
+    {"type": "function", "function": {"name": "web_search", "description": "Search the web for current information (news, facts, recent events). Always returns the MOST RECENT information available; do not add a year to the query yourself. When searching for a person, results may be about someone else who shares the name: do not present a name-only match as fact, say it may not be them, and confirm a distinguishing detail (school, city, handle) with the user.",
                                       "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}},
 ]
 

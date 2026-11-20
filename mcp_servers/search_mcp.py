@@ -76,7 +76,9 @@ def tag_past_dates(text: str, today: datetime.date | None = None) -> str:
 @mcp.tool()
 async def web_search(query: str) -> str:
     """Search the web for current information (news, facts, recent events). Always returns the MOST RECENT
-    information available; do not add a year to the query yourself."""
+    information available; do not add a year to the query yourself. When searching for a person, results may be about
+    someone else who shares the name: do not present a name-only match as fact, say it may not be them, and confirm a
+    distinguishing detail (school, city, handle) with the user."""
     key = os.environ.get("TAVILY_API_KEY")
     if not key:
         return "Search is not available because the search key is missing."
