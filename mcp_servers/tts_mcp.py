@@ -192,6 +192,15 @@ async def speak(text: str) -> str:
 
 
 @mcp.tool()
+async def tts_warm() -> str:
+    """Open the Deepgram connection ahead of time so the first sentence is not slowed by a cold connect."""
+    if os.environ.get("TTS_MOCK") != "1":
+        async with V.lock:
+            await V.ensure()
+    return "ok"
+
+
+@mcp.tool()
 async def speak_cancel() -> str:
     """Barge-in: drop any audio Deepgram is still producing and any sentences still waiting their turn."""
     global _gen

@@ -129,6 +129,10 @@ class McpTTS(TTSService):
     async def start(self, frame):
         await super().start(frame)
         await self._conn.start()
+        try:
+            await self._conn.call("tts_warm")  # open the Deepgram socket now, not on the first sentence
+        except Exception as e:
+            logger.warning(f"tts_warm failed (first sentence will be slower): {e}")
 
     async def cleanup(self):
         await super().cleanup()
