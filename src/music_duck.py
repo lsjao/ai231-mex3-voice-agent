@@ -9,20 +9,25 @@ import time
 
 from loguru import logger
 
+from src import events
 from src.mcp_conn import McpConn
 
 _conn: McpConn | None = None
+_last_on: bool | None = None
 _bot_speaking = False
 _last_bot_stop = 0.0
 _restore_task: asyncio.Task | None = None
 
 
 async def _call(on: bool):
-    global _conn
+    global _conn, _last_on
     try:
         if _conn is None:
             _conn = McpConn("http://127.0.0.1:8105/mcp")
-        await _conn.call("music_duck", {"on": on})
+        state = await _conn.call("music_duck", {"on": on})
+        if state == "active" and on != _last_on:           # only a real change while music is actually playing
+            events.emit("music", action="duck", title="", on=on)
+        _last_on = on
     except Exception as e:     # music server down or not started: music is optional
         logger.debug(f"music_duck({on}) skipped: {type(e).__name__}")
         _conn = None

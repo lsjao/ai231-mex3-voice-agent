@@ -14,7 +14,7 @@ from pipecat.frames.frames import (BotStartedSpeakingFrame, BotStoppedSpeakingFr
                                    LLMContextFrame, TTSSpeakFrame)
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 
-from src import music_duck
+from src import events, music_duck
 
 MAX_MESSAGES = int(os.environ.get("CONTEXT_MAX_MESSAGES", "16"))
 SLOW_AFTER = float(os.environ.get("SLOW_AFTER_S", "3.0"))
@@ -56,6 +56,7 @@ class TurnGuard(FrameProcessor):
         await asyncio.sleep(delay)
         if not self._speaking:
             logger.info(f"[guard] no reply audio after {delay:.1f}s: speaking the slow-connection line")
+            events.emit("guard", line=SLOW_LINE)
             await self.push_frame(TTSSpeakFrame(SLOW_LINE, append_to_context=False))
 
     async def process_frame(self, frame, direction):

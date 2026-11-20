@@ -26,6 +26,7 @@ from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.transports.base_transport import TransportParams
 from mcp.client.session_group import StreamableHttpParameters
 
+from src import events
 from src.guard import TurnGuard
 from src.mcp_services import McpSTT, McpTTS
 from src.trace import TraceObserver
@@ -156,7 +157,9 @@ async def main():
         audio_in_sample_rate=AUDIO_IN_RATE, audio_out_sample_rate=AUDIO_OUT_RATE,
     ))
     run, _cancel = await build(transport, ROOT / "logs")
-    logger.info(f"agent ready: model={LLM_MODEL} stop_secs={STOP_SECS}")
+    sid = events.new_session()                       # one session file per agent run, read by the live visual
+    events.emit("state", state="idle")
+    logger.info(f"agent ready: model={LLM_MODEL} stop_secs={STOP_SECS} session={sid}")
     await run
 
 

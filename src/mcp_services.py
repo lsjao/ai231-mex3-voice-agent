@@ -7,6 +7,7 @@ import asyncio
 import base64
 import collections
 import json
+import time
 from collections.abc import AsyncGenerator
 
 from loguru import logger
@@ -19,7 +20,7 @@ from pipecat.services.tts_service import TTSService
 from pipecat.transcriptions.language import Language
 from pipecat.utils.time import time_now_iso8601
 
-from src import fast_commands, music_duck
+from src import events, fast_commands, music_duck
 from src.echo import is_echo, note_bot_text
 from src.mcp_conn import McpConn
 
@@ -44,6 +45,7 @@ class McpSTT(STTService):
         self._preroll_len = 0
         self._buf = bytearray()
         self._active = False
+        self._t_vad_end = None       # when the user last stopped speaking (for the asr_ms in the event feed)
         self._lock = asyncio.Lock()  # serialises start/push/finish for one utterance at a time
 
     def can_generate_metrics(self) -> bool:
@@ -99,6 +101,7 @@ class McpSTT(STTService):
         await super()._handle_vad_user_stopped_speaking(frame)
         logger.info("[stt] VAD: user stopped speaking")
         music_duck.user_stopped()
+        self._t_vad_end = time.monotonic()
         self._active = False
         tail, self._buf = bytes(self._buf), bytearray()
         # Don't block the frame flow (benchmark marks VAD end from this frame): finish in the background.
@@ -114,15 +117,22 @@ class McpSTT(STTService):
                 logger.error(f"asr_finish failed: {e}")
                 return
         logger.info(f"[stt] final transcript: {text!r}")
-        if text and is_echo(text):
-            logger.info(f"[stt] dropped as echo of the agent's own speech: {text!r}")
+        asr_ms = int((time.monotonic() - self._t_vad_end) * 1000) if self._t_vad_end else None
+        if not text:
+            events.settle()                                # a turn with nothing heard: back to idle/music
             return
-        if text:
-            async def _say(reply: str):
-                await self.push_frame(TTSSpeakFrame(reply, append_to_context=False))
-            if await fast_commands.handle(text, _say):     # 'stop the music' etc.: no LLM, effective in ~0.4 s
-                logger.info(f"[stt] handled as a fast music command: {text!r}")
-                return
+        if is_echo(text):
+            logger.info(f"[stt] dropped as echo of the agent's own speech: {text!r}")
+            events.emit("echo_dropped", text=text)
+            events.settle()
+            return
+        events.emit("user", text=text, **({"asr_ms": asr_ms} if asr_ms is not None else {}))   # a real final transcript
+        async def _say(reply: str):
+            await self.push_frame(TTSSpeakFrame(reply, append_to_context=False))
+        if await fast_commands.handle(text, _say):         # 'stop the music' etc.: no LLM, effective in ~0.4 s
+            logger.info(f"[stt] handled as a fast music command: {text!r}")
+            events.settle()
+            return
         if text:
             await self.push_frame(
                 TranscriptionFrame(text, "", time_now_iso8601(), Language.EN, finalized=True)

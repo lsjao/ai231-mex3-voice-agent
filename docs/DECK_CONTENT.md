@@ -1,4 +1,4 @@
-# MEX3 deck content (2-page template, sections 1-6). Numbers marked TODO come from the final benchmark run.
+# MEX3 deck content (2-page template, sections 1-6). Benchmark numbers are from the final run 2026-11-21_04-16-23.
 
 ## 1. SYSTEM DIAGRAM (see docs/agent_visual.html for the interactive version)
 Mic (USB) -> Silero VAD + Smart Turn v3 (Pi) -> asr-mcp :8101 -> LLM (OpenRouter, openai/gpt-4.1-mini) -> tts-mcp :8102 -> speaker (3.5 mm)
@@ -32,8 +32,18 @@ mic muted during tool calls | music ducked while anyone talks | context size log
 | Task: music | music-mcp :8105 | music_play/pause/resume/stop/next/previous/volume/status | local mp3 playlists (ME2) | Pi server; software gain, ducking |
 
 ## 5. EVALUATION & BENCHMARK (class tool fdbench; one clock = Pi monotonic; tools OFF per class convention)
-TODO fill from runs/kuya-jukebox/2026-11-21_04-16-23/summary.md (target: E2E 4.0 s, ASR final 0.8 s, LLM TTFT 1.5 s, TTS TTFB 0.6 s, barge-in 0.8 s, WER 15 %).
-Earlier run (02:24): E2E 2.39 s (p95 4.17), ASR final 0.26 s, LLM TTFT 1.51 s (p95 3.46), TTS TTFB 0.41 s, barge-in 0.59 s (n=2), WER 4.2 %.
+FINAL run 2026-11-21_04-16-23 (Pi 4 8 GB, bare, peak 48 C, never throttled, Wi-Fi, 7 ms benchmark link; 10 phrases x 3 runs + 1 Full-Duplex-Bench round; tools OFF):
+| Metric | Definition | Target | Mean | p95 | n | Result |
+| E2E latency | end of speech -> audio out | < 4.0 s | 2.19 s | 2.81 s | 30 | PASS |
+| ASR final | end of speech -> transcript | < 0.8 s | 0.31 s | 0.34 s | 30 | PASS |
+| LLM TTFT | transcript -> first token | < 1.5 s | 1.20 s | 1.61 s | 30 | PASS (mean); p95 slightly over |
+| TTS TTFB | text -> first audio chunk | < 0.6 s | 0.41 s | 0.36 s | 30 | PASS |
+| Barge-in | speech -> playback stopped | < 0.8 s | 0.94 s | 1.24 s | 2 | **MISS** (n=2, spread 0.6-1.24 s; an earlier run measured 0.59 s) |
+| WER | ASR accuracy on test set | < 15 % | 9.8 % | n/a | 30 | PASS (see note) |
+Honest notes: barge-in has only 2 samples and missed the target; a re-measure with more rounds is planned. WER rose from 4.2 % (earlier run) to 9.8 % partly because this run drew
+different test phrases and the scorer counts "20 minutes" vs "twenty minutes", "July 4" vs "07/04" and "orchids" vs "orchid" as errors, but 2 of 30 transcripts also lost their last word (real).
+Earlier run (02:24): E2E 2.39 s (p95 4.17), ASR final 0.26 s, LLM TTFT 1.51 s (p95 3.46), TTS TTFB 0.41 s, barge-in 0.59 s (n=2), WER 4.2 %. The context trim (last 16 messages) and the model switch
+are what brought the p95 tail down.
 Reported separately (live, tools ON, not part of the class benchmark): plain turns ~2.0-2.6 s to first sound; search turns: holding phrase ~2.4 s, full answer ~5-8 s.
 Honest note: E2E is counted from VAD end; add the end-of-speech wait (0.45 s) for the delay a person feels.
 

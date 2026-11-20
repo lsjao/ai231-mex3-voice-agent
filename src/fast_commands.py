@@ -10,7 +10,7 @@ import time
 
 from loguru import logger
 
-from src import music_duck
+from src import events, music_duck
 from src.mcp_conn import McpConn
 
 _conn: McpConn | None = None
@@ -72,6 +72,13 @@ async def handle(text: str, say) -> bool:
         logger.info(f"[fast] {text!r} -> {tool}{args or ''} in {time.monotonic() - t0:.2f}s ({result})")
         if tool in ("music_stop", "music_adjust") and "nothing is playing" in result.lower():
             return False
+        if tool == "music_stop":                      # real events for the live visual (what actually just happened)
+            events.emit("music", action="stop", title="")
+        elif tool == "music_pause":
+            events.emit("music", action="pause", title="")
+        elif tool in ("music_resume", "music_next", "music_previous"):
+            m = re.match(r"^(?:Playing|Paused on) (.+?)\. Volume", await _call("music_status"))
+            events.emit("music", action="play", title=m.group(1) if m else "")
         await say(reply)
         return True
     except Exception as e:                        # music server down etc.: fall back to the LLM path

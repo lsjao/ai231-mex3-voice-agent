@@ -219,7 +219,7 @@ async def music_status() -> str:
 async def music_duck(on: bool) -> str:
     """Internal: lower the music while someone is talking (called by the agent, not by the LLM)."""
     P.ducked = bool(on)
-    return "ok"
+    return "active" if P.active and not P.paused.is_set() else "idle"   # lets the agent log ducking only when music plays
 
 
 if __name__ == "__main__":
