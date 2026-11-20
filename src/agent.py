@@ -27,8 +27,9 @@ from src.trace import TraceObserver
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
-LLM_MODEL = os.environ.get("LLM_MODEL", "anthropic/claude-haiku-5.5")
-STOP_SECS = float(os.environ.get("VAD_STOP_SECS", "0.5"))  # silence that ends a turn: lower = faster, but cuts pauses
+LLM_MODEL = os.environ.get("LLM_MODEL", "openai/gpt-4.1-mini")
+STOP_SECS = float(os.environ.get("VAD_STOP_SECS", "0.7"))  # silence that ends a turn: lower = faster, but cuts pauses
+VAD_CONF = float(os.environ.get("VAD_CONFIDENCE", "0.8"))  # higher = ignores background noise/music better
 AUDIO_IN_RATE = 16000   # fdbench requires 16 kHz input
 AUDIO_OUT_RATE = 24000
 PROMPT_VERSION = "v1"
@@ -49,7 +50,7 @@ def make_pipeline(transport) -> Pipeline:
     pair = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
-            vad_analyzer=SileroVADAnalyzer(params=VADParams(stop_secs=STOP_SECS)),
+            vad_analyzer=SileroVADAnalyzer(params=VADParams(confidence=VAD_CONF, stop_secs=STOP_SECS)),
         ),
     )
     return Pipeline([

@@ -13,15 +13,17 @@ from pipecat.observers.base_observer import BaseObserver, FramePushed
 class TraceObserver(BaseObserver):
     def __init__(self):
         super().__init__()
-        self._seen: set[int] = set()
+        self._last: dict[str, float] = {}
         self._text: list[str] = []
         self._t_vad_stop = self._t_final = None
         self._llm_first = False
 
     def _once(self, frame) -> bool:
-        if frame.id in self._seen:
+        # Pipecat broadcasts some frames as two copies with different ids: de-duplicate by type within 50 ms.
+        key, now = type(frame).__name__, time.monotonic()
+        if now - self._last.get(key, -1.0) < 0.05:
             return False
-        self._seen.add(frame.id)
+        self._last[key] = now
         return True
 
     @staticmethod
