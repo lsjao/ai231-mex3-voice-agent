@@ -9,6 +9,7 @@ w = wave.open(path)
 assert w.getframerate() == 16000 and w.getnchannels() == 1 and w.getsampwidth() == 2
 pcm = w.readframes(w.getnframes())
 vad = SileroVADAnalyzer(sample_rate=16000)
+vad.set_sample_rate(16000)  # a pipeline transport normally does this
 step = vad.num_frames_required() * 2  # bytes per analysis window
 async def main():
     global segs
