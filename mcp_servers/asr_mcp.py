@@ -16,6 +16,7 @@ import base64
 import json
 import os
 import time
+from urllib.parse import quote
 
 from dotenv import load_dotenv
 from mcp.server.mcpserver import MCPServer
@@ -24,8 +25,11 @@ from websockets.asyncio.client import connect
 load_dotenv()
 PORT = int(os.environ.get("ASR_MCP_PORT", "8101"))
 MODEL = os.environ.get("DEEPGRAM_ASR_MODEL", "nova-3")
+# nova-3 "keyterm" boosts recognition of words it would otherwise mishear (the agent's own name).
+KEYTERMS = [k.strip() for k in os.environ.get("ASR_KEYTERMS", "Kuya Jukebox,Kuya,Jukebox").split(",") if k.strip()]
 URL = (f"wss://api.deepgram.com/v1/listen?model={MODEL}&encoding=linear16&sample_rate=16000&channels=1"
-       "&language=en&smart_format=true&interim_results=false&endpointing=false")
+       "&language=en&smart_format=true&interim_results=false&endpointing=false"
+       + "".join(f"&keyterm={quote(k)}" for k in KEYTERMS))
 mcp = MCPServer("asr-mcp")
 
 

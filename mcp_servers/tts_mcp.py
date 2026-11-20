@@ -20,7 +20,7 @@ from websockets.asyncio.client import connect
 
 load_dotenv()
 PORT = int(os.environ.get("TTS_MCP_PORT", "8102"))
-MODEL = os.environ.get("DEEPGRAM_TTS_MODEL", "aura-2-thalia-en")
+MODEL = os.environ.get("DEEPGRAM_TTS_MODEL", "aura-2-orion-en")
 RATE = int(os.environ.get("TTS_SAMPLE_RATE", "24000"))
 URL = f"wss://api.deepgram.com/v1/speak?model={MODEL}&encoding=linear16&sample_rate={RATE}"
 mcp = MCPServer("tts-mcp")
