@@ -36,14 +36,26 @@ async def main():
     print(f"captured {len(a) / 16000:.1f}s at 16 kHz, peak={np.abs(a).max()} rms={np.sqrt((a.astype(float) ** 2).mean()):.0f}")
     win = 512
     best = 0.0
+    # Run the REAL analyzer state machine (confidence AND loudness gate), as the agent does, with the agent's settings.
+    from pipecat.audio.vad.vad_analyzer import VADParams, VADState
+    real = SileroVADAnalyzer(sample_rate=16000, params=VADParams(confidence=0.8, start_secs=0.35, stop_secs=0.45))
+    real.set_sample_rate(16000)
+    ever_speaking, max_vol = False, 0.0
     for sec in range(int(len(a) / 16000 * 2)):
         seg = a[sec * 8000:(sec + 1) * 8000]
-        confs = [float(np.squeeze(vad.voice_confidence(seg[i:i + win].tobytes())))
-                 for i in range(0, len(seg) - win + 1, win)]
+        confs, state, vol = [], None, 0.0
+        for i in range(0, len(seg) - win + 1, win):
+            chunk = seg[i:i + win].tobytes()
+            confs.append(float(np.squeeze(vad.voice_confidence(chunk))))
+            state = await real.analyze_audio(chunk)
+            vol = max(vol, float(real._prev_volume))
         c = max(confs) if confs else 0.0
         best = max(best, c)
+        max_vol = max(max_vol, vol)
+        ever_speaking |= state == VADState.SPEAKING
         rms = float(np.sqrt((seg.astype(float) ** 2).mean())) if len(seg) else 0
-        print(f"t={sec * 0.5:3.1f}s rms={rms:6.0f} max_conf={c:.2f} {'#' * int(c * 20)}")
-    print(f"best speech confidence {best:.2f} ({'speech reaches the VAD' if best > 0.7 else 'NO clear speech detected'})")
+        print(f"t={sec * 0.5:3.1f}s rms={rms:6.0f} conf={c:.2f} loudness={vol:.2f} state={state.name if state else '-'}")
+    print(f"best confidence {best:.2f}; max loudness {max_vol:.2f} (gate 0.60); "
+          f"REAL VAD TRIGGERED: {'YES (would interrupt)' if ever_speaking else 'no'}")
 
 asyncio.run(main())
