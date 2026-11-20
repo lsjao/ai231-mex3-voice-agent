@@ -30,7 +30,6 @@ class Voice:
     def __init__(self):
         self.ws = None
         self.lock = asyncio.Lock()
-        self.keeper = None
 
     async def ensure(self):
         if self.ws is not None and self.ws.close_code is None:
@@ -41,20 +40,27 @@ class Voice:
         t0 = time.monotonic()
         self.ws = await connect(URL, additional_headers={"Authorization": f"Token {key}"}, max_size=None)
         print(f"[tts-mcp] connected to Deepgram in {time.monotonic() - t0:.2f}s", flush=True)
-        if self.keeper is None or self.keeper.done():
-            self.keeper = asyncio.create_task(self._keepalive())
 
-    async def _keepalive(self):
-        while True:  # Deepgram closes an idle socket; a Flush on an empty buffer is harmless
-            await asyncio.sleep(20)
-            if self.ws is not None and self.ws.close_code is None and not self.lock.locked():
-                try:
-                    await self.ws.send(json.dumps({"type": "Flush"}))
-                except Exception:
-                    pass
+    async def drain(self):
+        """Discard anything still sitting in the socket from an earlier sentence (stale audio, Flushed, Cleared).
+        Without this a leftover message ends the NEXT sentence early and every reply lags one turn behind."""
+        dropped = 0
+        while True:
+            try:
+                await asyncio.wait_for(self.ws.recv(), timeout=0.03)
+                dropped += 1
+            except asyncio.TimeoutError:
+                break
+            except Exception:
+                self.ws = None
+                break
+        if dropped:
+            print(f"[tts-mcp] drained {dropped} stale message(s)", flush=True)
 
     async def synth(self, text: str) -> bytes:
         async with self.lock:
+            await self.ensure()
+            await self.drain()
             await self.ensure()
             await self.ws.send(json.dumps({"type": "Speak", "text": text}))
             await self.ws.send(json.dumps({"type": "Flush"}))
@@ -93,6 +99,8 @@ async def _run_job(job_id: str, text: str, q: asyncio.Queue, gen: int):
                 return
             for attempt in (1, 2):
                 try:
+                    await V.ensure()
+                    await V.drain()
                     await V.ensure()
                     await V.ws.send(json.dumps({"type": "Speak", "text": text}))
                     await V.ws.send(json.dumps({"type": "Flush"}))
