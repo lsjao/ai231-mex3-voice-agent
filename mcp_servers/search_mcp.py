@@ -73,6 +73,16 @@ def tag_past_dates(text: str, today: datetime.date | None = None) -> str:
     return text
 
 
+PERSON_RX = re.compile(r"^(?:(?:about|on|who is|who's|information (?:about|on)|research|search for)\s+)?"
+                       r"(?:(?:lord|dr|mr|ms|mrs|engr|atty)\.?\s+)?(?:[A-Z][\w'’.-]+\s+){1,3}[A-Z][\w'’.-]+\??$")
+
+
+def looks_like_person(query: str) -> bool:
+    """A query that is basically just a personal name (two to four capitalised words), or 'about me / myself'."""
+    q = query.strip()
+    return bool(PERSON_RX.match(q)) or bool(re.search(r"\b(about me|about myself|who am i)\b", q, re.I))
+
+
 @mcp.tool()
 async def web_search(query: str) -> str:
     """Search the web for current information (news, facts, recent events). Always returns the MOST RECENT
@@ -97,7 +107,13 @@ async def web_search(query: str) -> str:
         title, snippet = clean(item.get("title", "")), clean(item.get("content", ""))[:100]
         if title:
             parts.append(f"{title}: {snippet}" if snippet else title)
-    return tag_past_dates(" ".join(parts))[:600] or "I found nothing useful for that search."
+    text = tag_past_dates(" ".join(parts))[:600]
+    if text and looks_like_person(query):
+        # In the RESULT itself, where the model cannot miss it: name-only matches are often a different person.
+        text = ("CAUTION: this is a search for a person by name. These results may describe someone else who shares the "
+                "name. Do not present them as facts about the user; say they may not be the same person and ask for a "
+                "distinguishing detail. " + text)
+    return text or "I found nothing useful for that search."
 
 
 if __name__ == "__main__":

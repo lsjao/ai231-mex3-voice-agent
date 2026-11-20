@@ -23,7 +23,7 @@ from mcp.server.mcpserver import MCPServer
 MUSIC_DIR = os.environ.get("MUSIC_DIR", os.path.expanduser("~/vcm/music"))
 PORT = int(os.environ.get("MUSIC_MCP_PORT", "8105"))
 EXTS = (".mp3", ".wav", ".ogg", ".flac")
-DUCK_FACTOR = 0.25   # gain multiplier while someone is talking
+DUCK_FACTOR = 0.3    # gain multiplier while someone is talking (the speaker itself runs at 80 % to avoid echo)
 mcp = MCPServer("music-mcp")
 
 
@@ -55,7 +55,7 @@ class Player:
     def __init__(self):
         self.queue: list[str] = []
         self.idx = 0
-        self.volume = int(os.environ.get("MUSIC_VOLUME", "45"))   # 0-100
+        self.volume = int(os.environ.get("MUSIC_VOLUME", "65"))   # 0-100
         self.ducked = False
         self.paused = threading.Event()
         self.stop_flag = threading.Event()

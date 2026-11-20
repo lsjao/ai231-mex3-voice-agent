@@ -102,6 +102,9 @@ async def make_pipeline(transport):
             # While a tool runs the agent is mostly silent or playing its own holding phrase: ignore the mic then, so
             # leaked echo of that phrase cannot start phantom turns.
             user_mute_strategies=[FunctionCallUserMuteStrategy()],
+            # A turn with no transcript (a click, the ringtone, background noise) is left unanswered instead of the
+            # agent replying "I didn't catch that" to nothing.
+            empty_user_turn=None,
         ),
     )
     pipeline = Pipeline([
