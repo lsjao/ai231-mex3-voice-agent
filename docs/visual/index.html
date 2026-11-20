@@ -623,6 +623,7 @@ function ingestFrom(src, ev){
 
 /* ===================== connection: LIVE ===================== */
 let mode = "live", hostVal = store("kuya.host") || "192.168.88.8:8106";
+try{ const qh = new URLSearchParams(location.search).get("host"); if(qh){ hostVal = qh.replace(/[^\w.:\-\/]/g,""); store("kuya.host",hostVal); } }catch(e){}
 const hostIn = $("host"); hostIn.value = hostVal;
 function hostUrl(path){ let h=hostVal.trim().replace(/\/+$/,""); if(!/^https?:\/\//i.test(h)) h="http://"+h; return h+path; }
 const PILL = {live:"LIVE", reconnecting:"RECONNECTING", replay:"REPLAY", waiting:"WAITING"};
