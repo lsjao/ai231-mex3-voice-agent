@@ -25,7 +25,10 @@ def clean(text: str) -> str:
 
 NEWSY = ("latest", "news", "today", "tonight", "yesterday", "election", "score", "won", "wins", "result", "current",
          "now", "this week", "this year", "update", "recent", "happened", "winner", "standings", "price",
-         "next", "upcoming", "schedule", "fixture", "tomorrow", "when is", "when does", "who is the current")
+         "who is the current")
+# Schedules and fixtures live on schedule PAGES, not in news articles: no news topic and no 'last month' filter for these.
+SCHEDULE = ("next game", "next match", "upcoming", "schedule", "fixture", "tomorrow", "when is", "when does", "when's",
+            "next concert", "next race")
 
 
 async def _search(key: str, query: str, topic: str, time_range: str | None, deep: bool = False) -> dict:
@@ -96,8 +99,13 @@ async def web_search(query: str) -> str:
     # Recency by default: put the current year in the query, use the news topic for time-sensitive questions, and
     # only look at recent pages. If that finds nothing, fall back to an unrestricted search.
     q = query if re.search(r"(19|20)\d{2}", query) else f"{query} {year}"
-    newsy = any(w in query.lower() for w in NEWSY)
-    d = await _search(key, q, "news" if newsy else "general", "month" if newsy else "year", deep=newsy)
+    ql = query.lower()
+    sched = any(w in ql for w in SCHEDULE)
+    newsy = any(w in ql for w in NEWSY) and not sched
+    if sched:
+        d = await _search(key, q, "general", None, deep=True)
+    else:
+        d = await _search(key, q, "news" if newsy else "general", "month" if newsy else "year", deep=newsy)
     if not d.get("results") and not d.get("answer"):
         d = await _search(key, q, "general", None, deep=newsy)
     parts = []
@@ -107,7 +115,14 @@ async def web_search(query: str) -> str:
         title, snippet = clean(item.get("title", "")), clean(item.get("content", ""))[:100]
         if title:
             parts.append(f"{title}: {snippet}" if snippet else title)
-    text = tag_past_dates(" ".join(parts))[:600]
+    text = tag_past_dates(" ".join(parts))[:560]
+    hosts = []
+    for item in d.get("results", [])[:3]:                  # name the outlets so the agent can say who reported it
+        h = re.sub(r"^www\.", "", re.sub(r"^https?://", "", item.get("url", "")).split("/")[0])
+        if h and h not in hosts:
+            hosts.append(h)
+    if text and hosts:
+        text += " Sources: " + ", ".join(hosts) + "."
     if text and looks_like_person(query):
         # In the RESULT itself, where the model cannot miss it: name-only matches are often a different person.
         text = ("CAUTION: this is a search for a person by name. These results may describe someone else who shares the "

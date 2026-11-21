@@ -42,7 +42,9 @@ AUDIO_IN_RATE = 16000   # fdbench requires 16 kHz input
 AUDIO_OUT_RATE = 24000
 PROMPT_VERSION = "v4"
 BENCH = os.environ.get("BENCH") == "1"  # benchmark mode: no tools (class convention: tools/agent calls off)
-HOLD_PHRASES = {"get_weather": "Let me check the weather.", "web_search": "Let me look that up."}  # spoken by OUR code
+HOLD_PHRASES = {"get_weather": "Let me check the weather.", "web_search": "Let me look that up.",
+                "nba_games": "Checking the games.", "nba_next_games": "Checking the schedule.",
+                "get_current_time": "One sec."}  # spoken by OUR code
 for _t in ("music_play", "music_pause", "music_resume", "music_stop", "music_next", "music_previous", "music_volume",
            "music_status"):
     HOLD_PHRASES[_t] = "Sure."
@@ -50,6 +52,7 @@ for _t in ("music_play", "music_pause", "music_resume", "music_stop", "music_nex
 TASK_SERVERS = {
     "weather-mcp": ("http://127.0.0.1:8103/mcp", None),
     "search-mcp": ("http://127.0.0.1:8104/mcp", None),
+    "sports-mcp": ("http://127.0.0.1:8108/mcp", None),
     "music-mcp": ("http://127.0.0.1:8105/mcp", ["music_play", "music_pause", "music_resume", "music_stop", "music_next",
                                                   "music_previous", "music_volume", "music_status"]),
 }

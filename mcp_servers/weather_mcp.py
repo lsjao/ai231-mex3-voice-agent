@@ -42,5 +42,18 @@ async def get_weather(city: str) -> str:
             f"The chance of rain is {day['precipitation_probability_max'][0]} percent.")
 
 
+@mcp.tool()
+async def get_current_time(timezone: str = "Asia/Manila") -> str:
+    """The current local time and date from the device clock, for a time zone like Asia/Manila, America/New_York or Europe/London."""
+    import datetime as _dt
+    from zoneinfo import ZoneInfo
+    try:
+        now = _dt.datetime.now(ZoneInfo(timezone))
+    except Exception:
+        return f"I do not know the time zone {timezone}."
+    city = timezone.split("/")[-1].replace("_", " ")
+    return f"It is {now:%I:%M %p}".replace("It is 0", "It is ") + f" on {now:%A, %d %B %Y} in {city}."
+
+
 if __name__ == "__main__":
     mcp.run("streamable-http", host="127.0.0.1", port=PORT)
