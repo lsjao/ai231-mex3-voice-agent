@@ -24,6 +24,7 @@ from pipecat.processors.frame_processor import FrameProcessor
 from pipecat.services.openrouter.llm import OpenRouterLLMService
 
 from src.agent import LLM_MODEL, ASYNC_TOOLS, load_prompt, load_task_tools
+from src.resume import ResumeObserver
 
 T0 = time.monotonic()
 LOG = []
@@ -57,13 +58,19 @@ async def main():
     clients, tools = await load_task_tools()
     context = LLMContext(messages=[{"role": "system", "content": load_prompt()}], tools=tools)
     pair = LLMContextAggregatorPair(context)
-    worker = PipelineWorker(Pipeline([pair.user(), llm, Sink(), pair.assistant()]), params=PipelineParams(enable_metrics=False))
+    resume = ResumeObserver() if os.environ.get("RESUME") == "1" else None
+    worker = PipelineWorker(Pipeline([pair.user(), llm, Sink(), pair.assistant()]), params=PipelineParams(enable_metrics=False),
+                            observers=[resume] if resume else [])
+    if resume:
+        resume.attach(worker)
     runner = WorkerRunner(handle_sigint=False)
     await runner.add_workers(worker)
     run = asyncio.create_task(runner.run())
     await asyncio.sleep(1.0)
     q1, q2 = sys.argv[1] if len(sys.argv) > 1 else "What is the latest news about the Mars rover?", "Quick question: what is twelve times eleven?"
     mark("USER", q1)
+    if resume:
+        resume.note_user(q1)
     await worker.queue_frames([LLMMessagesAppendFrame(messages=[{"role": "user", "content": q1}], run_llm=True)])
     for _ in range(60):                                          # wait until the search itself has started, then interrupt it
         await asyncio.sleep(0.25)
@@ -71,8 +78,10 @@ async def main():
             break
     await asyncio.sleep(1.0)
     mark("USER", q2 + "   (interrupts the search)")
+    if resume:
+        resume.note_user(q2)
     await worker.queue_frames([InterruptionFrame(), LLMMessagesAppendFrame(messages=[{"role": "user", "content": q2}], run_llm=True)])
-    await asyncio.sleep(22)
+    await asyncio.sleep(32)
     mark("end")
     await worker.cancel()
     for c in clients:

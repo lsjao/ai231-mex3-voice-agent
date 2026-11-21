@@ -23,6 +23,7 @@ from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair, LLMUserAggregatorParams
 from pipecat.services.mcp_service import MCPClient
 from src.mute import HoldPhraseMuteStrategy
+from src.resume import ResumeObserver
 from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.transports.base_transport import TransportParams
 from mcp.client.session_group import StreamableHttpParameters
@@ -161,12 +162,15 @@ async def make_pipeline(transport):
 
 async def build(transport, log_dir: Path):
     pipeline, clients = await make_pipeline(transport)
+    resume = None if BENCH or os.environ.get("RESUME_INTERRUPTED", "1") != "1" else ResumeObserver()   # off in the class benchmark
     worker = PipelineWorker(
         pipeline,
         params=PipelineParams(audio_in_sample_rate=AUDIO_IN_RATE, audio_out_sample_rate=AUDIO_OUT_RATE,
                               enable_metrics=True, enable_usage_metrics=True),
-        observers=[TraceObserver()],
+        observers=[TraceObserver()] + ([resume] if resume else []),
     )
+    if resume:
+        resume.attach(worker)
     runner = WorkerRunner(handle_sigint=False)
 
     async def run():
