@@ -55,5 +55,38 @@ async def get_current_time(timezone: str = "Asia/Manila") -> str:
     return f"It is {now:%I:%M %p}".replace("It is 0", "It is ") + f" on {now:%A, %d %B %Y} in {city}."
 
 
+@mcp.tool()
+async def convert_time(time: str, from_timezone: str, to_timezone: str = "Asia/Manila", date: str = "") -> str:
+    """Convert a clock time from one time zone to another and say which day it lands on. Use this instead of working it out
+    yourself. time: like '8:00 PM' or '20:00'. from_timezone / to_timezone: like America/Los_Angeles, Europe/London, Asia/Manila.
+    date: optional YYYY-MM-DD in the FROM zone (default: today there)."""
+    import datetime as _dt
+    from zoneinfo import ZoneInfo
+    try:
+        src_tz, dst_tz = ZoneInfo(from_timezone), ZoneInfo(to_timezone)
+    except Exception:
+        return "I do not know one of those time zones."
+    t = time.strip().upper().replace(".", "")
+    parsed = None
+    for fmt in ("%I:%M %p", "%I %p", "%I:%M%p", "%I%p", "%H:%M"):
+        try:
+            parsed = _dt.datetime.strptime(t, fmt).time()
+            break
+        except ValueError:
+            continue
+    if parsed is None:
+        return "I could not read that time."
+    try:
+        day = _dt.date.fromisoformat(date) if date else _dt.datetime.now(src_tz).date()
+    except ValueError:
+        return "I could not read that date."
+    src = _dt.datetime.combine(day, parsed, tzinfo=src_tz)
+    dst = src.astimezone(dst_tz)
+    shift = (dst.date() - src.date()).days
+    when = {0: "the same day", 1: "the next day", -1: "the previous day"}.get(shift, f"{shift:+d} days")
+    f = lambda d, z: f"{d:%I:%M %p}".lstrip("0") + " " + z.split("/")[-1].replace("_", " ") + " time"
+    return f"{f(src, from_timezone)} on {src:%A, %d %B} is {f(dst, to_timezone)} on {dst:%A, %d %B}, {when}."
+
+
 if __name__ == "__main__":
     mcp.run("streamable-http", host="127.0.0.1", port=PORT)

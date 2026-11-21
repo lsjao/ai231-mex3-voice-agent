@@ -22,7 +22,7 @@ from pipecat.observers.base_observer import BaseObserver, FramePushed
 from src import events
 
 SLOW_TOOLS = {"web_search": "Searching the web", "read_page": "Reading a page", "publish_website": "Building your page"}
-IDLE_SECS = 1.0          # the conversation must be quiet this long before an interrupted request is resumed
+IDLE_SECS = 1.5          # the conversation must be quiet this long before an interrupted request is resumed
 PROGRESS_SECS = 3.0      # heartbeat for the visual while a slow tool runs
 RESUME_PROMPT = ('[automatic note] You were interrupted while working on this earlier request: "{req}". That work was cancelled '
                  'before it finished. The interruption has now been handled. Continue with the earlier request now: use your tools '
@@ -39,6 +39,7 @@ class ResumeObserver(BaseObserver):
         self._pending: list[dict] = []                # cancelled slow requests waiting to be resumed
         self._user_speaking = self._bot_speaking = self._llm_busy = False
         self._last_activity = time.monotonic()
+        self._last_transcript = 0.0
         self._watch_task = None
         self._seen: set[str] = set()
 
@@ -65,6 +66,7 @@ class ResumeObserver(BaseObserver):
         if isinstance(f, TranscriptionFrame):
             if f.text and f.text.strip():
                 self._last_user = f.text.strip()
+            self._last_transcript = time.monotonic()
             self._touch()
         elif isinstance(f, VADUserStartedSpeakingFrame):
             self._user_speaking = True; self._touch()
@@ -104,7 +106,8 @@ class ResumeObserver(BaseObserver):
 
     def _idle(self) -> bool:
         return (not self._user_speaking and not self._bot_speaking and not self._llm_busy and not self._active
-                and time.monotonic() - self._last_activity >= IDLE_SECS)
+                and time.monotonic() - self._last_activity >= IDLE_SECS
+                and time.monotonic() - self._last_transcript >= 4.0)      # a split sentence's second half may still be coming
 
     async def _watch(self):
         while True:

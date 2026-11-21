@@ -42,10 +42,10 @@ VAD_START = float(os.environ.get("VAD_START_SECS", "0.35"))  # continuous speech
 VAD_CONF = float(os.environ.get("VAD_CONFIDENCE", "0.8"))  # higher = ignores background noise/music better
 AUDIO_IN_RATE = 16000   # fdbench requires 16 kHz input
 AUDIO_OUT_RATE = 24000
-PROMPT_VERSION = "v11"
+PROMPT_VERSION = "v12"
 BENCH = os.environ.get("BENCH") == "1"  # benchmark mode: no tools (class convention: tools/agent calls off)
 HOLD_PHRASES = {"get_weather": "Let me check the weather.", "web_search": "Let me look that up.",
-                "get_current_time": "One sec.", "publish_website": "Building the page now.", "read_page": "Let me open that page."}  # spoken by OUR code
+                "get_current_time": "One sec.", "convert_time": "One sec.", "publish_website": "Building the page now.", "read_page": "Let me open that page."}  # spoken by OUR code
 for _t in ("music_play", "music_pause", "music_resume", "music_stop", "music_next", "music_previous", "music_volume",
            "music_status"):
     HOLD_PHRASES[_t] = "Sure."

@@ -29,6 +29,8 @@ class TraceObserver(BaseObserver):
         self._seen_ids: set[int] = set()
         self._t_vad_stop = None
         self._speaking = False
+        self._started_ids: set[str] = set()
+        self._ended_ids: set[str] = set()
         self._reset_turn()
 
     def _reset_turn(self):
@@ -113,12 +115,14 @@ class TraceObserver(BaseObserver):
         elif isinstance(f, TTSStartedFrame):
             if self._t_tts_start is None:
                 self._t_tts_start = now
-        elif isinstance(f, FunctionCallInProgressFrame) and f.tool_call_id not in self._tool_t0:   # one event per call id
+        elif isinstance(f, FunctionCallInProgressFrame) and f.tool_call_id not in self._started_ids:   # one event per call id, ever
+            self._started_ids.add(f.tool_call_id)
             self._tool_open = True
             self._tool_t0[f.tool_call_id] = now
             events.emit("tool", name=f.function_name, phase="start")
             events.emit("state", state="tool")
-        elif isinstance(f, FunctionCallResultFrame) and f.tool_call_id in self._tool_t0:           # ignore the extra copies
+        elif isinstance(f, FunctionCallResultFrame) and f.tool_call_id in self._tool_t0 and f.tool_call_id not in self._ended_ids:   # ignore extra copies
+            self._ended_ids.add(f.tool_call_id)
             ms = int(round((now - self._tool_t0.pop(f.tool_call_id)) * 1000))
             self._tool_ms += ms / 1000
             self._tool_open = False
