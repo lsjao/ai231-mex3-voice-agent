@@ -86,39 +86,41 @@ main{flex:1 1 0;min-height:0;padding:0 .9rem .8rem;display:flex}
 .sess{font-size:var(--t-1);color:var(--muted);margin:.3rem 0 0;line-height:1.3}
 
 /* ---------- chat ---------- */
-.chatCard{display:flex;flex-direction:column;padding:.6rem .8rem}
-.chatHead{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.3rem}
+.chatCard{display:flex;flex-direction:column;padding:1.1rem 1.2rem;
+  --text:#2b1519;--muted:#6f5a5f;--surface:#fffaf4;--line:#eadfd2;--amber:#8a5200;--cyan:#0a6676;--coral:#b3382a;--good:#1b7a4b;--miss:#b3321f;
+  background:var(--surface);color:var(--text)}
+.chatHead{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.8rem}
 .chatHead h2{margin:0}
-.replayBar{display:none;align-items:center;gap:.4rem;flex-wrap:wrap;border:var(--border) dashed var(--cyan);border-radius:.6rem;padding:.3rem .5rem;margin-bottom:.4rem;font-size:var(--t-1);color:var(--cyan)}
+.replayBar{display:none;align-items:center;gap:.4rem;flex-wrap:wrap;border:var(--border) dashed var(--cyan);border-radius:.6rem;padding:.4rem .6rem;margin-bottom:.7rem;font-size:var(--t-1);color:var(--cyan)}
 .replayBar b{font-weight:700}
-.replayBar .btn{padding:.1rem .45rem}
-.replayBar progress{flex:1 1 5rem;height:.45rem;accent-color:var(--cyan)}
+.replayBar .btn{padding:.1rem .45rem;background:#fff}
+.replayBar progress{flex:1 1 5rem;height:.4rem;accent-color:var(--cyan)}
 .chatCard.isReplay .replayBar{display:flex}
 .chatCard.isReplay{border-color:var(--cyan)}
-#feed{list-style:none;margin:0;padding:0 .3rem 0 0;flex:1 1 0;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:.75rem;scrollbar-color:var(--line) transparent}
-.turn{display:flex;flex-direction:column;gap:.3rem}
-.turnH{font-size:var(--t-1);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
-.row{font-size:var(--t1);line-height:1.3}
-.msg{overflow-wrap:anywhere;padding-left:.7rem;border-left:3px solid transparent}
-.msg .who{display:block;font-size:var(--t-1);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:.05rem}
-.msg.user{color:var(--muted);border-left-color:var(--line)}
+#feed{list-style:none;margin:0;padding:0 .4rem 0 0;flex:1 1 0;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:.7rem;scrollbar-color:#d8c8b8 transparent}
+.turn{display:flex;flex-direction:column;gap:.5rem;background:#fff;border:1px solid var(--line);border-radius:.7rem;padding:.75rem .9rem}
+.turnH{font-size:var(--t-2);color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.row{font-size:.9rem;line-height:1.45}
+.msg{overflow-wrap:anywhere;padding-left:.7rem;border-left:2px solid transparent}
+.msg .who{display:block;font-size:var(--t-2);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:.15rem}
+.msg.user{color:var(--muted);border-left-color:#d8c8b8}
 .msg.user .who{color:var(--cyan)}
-.msg.agent{color:var(--text);font-weight:500;border-left-color:var(--amber)}
+.msg.agent{color:var(--text);border-left-color:var(--amber)}
 .msg.agent .who{color:var(--amber)}
-.chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.3rem}
-.chip{font-size:var(--t-1);font-weight:500;border-radius:99px;padding:.05rem .5rem;border:var(--border) solid var(--line);background:var(--bg1);white-space:nowrap;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.45rem}
+.chip{font-size:var(--t-2);font-weight:500;border-radius:99px;padding:.05rem .5rem;border:1px solid var(--line);background:#fbf3ea;white-space:nowrap;color:var(--muted)}
 .chip b{font-weight:700}
-.chip.ok{color:var(--good);border-color:rgba(141,232,184,.5)} .chip.miss{color:var(--miss);border-color:rgba(255,155,138,.6)}
-.evt{font-size:var(--t0);color:var(--muted);display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap;padding-left:.7rem}
+.chip.ok{color:var(--good);border-color:rgba(27,122,75,.35)} .chip.miss{color:var(--miss);border-color:rgba(179,50,31,.45)}
+.evt{font-size:var(--t-1);color:var(--muted);display:flex;align-items:baseline;gap:.4rem;flex-wrap:wrap;padding-left:.7rem}
 .evt .ic{font-style:normal;color:var(--amber)}
 .evt.tool b{color:var(--amber);font-weight:700}
 .evt.int,.evt.int .ic{color:var(--coral)}
 .evt.guard{color:var(--amber)}
 .evt .q{color:var(--text)}
 .spin{display:inline-block;width:.8em;height:.8em;border:2px solid var(--amber);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
-.empty{margin:auto;text-align:center;color:var(--muted);max-width:24rem;padding:1rem}
-.empty b{display:block;font-size:var(--t2);color:var(--text);margin-bottom:.4rem}
-.empty span{font-size:var(--t0);line-height:1.4}
+.empty{margin:auto;text-align:center;color:var(--muted);max-width:22rem;padding:1rem}
+.empty b{display:block;font-size:var(--t1);color:var(--text);margin-bottom:.4rem;font-weight:500}
+.empty span{font-size:var(--t-1);line-height:1.5}
 .menu{position:absolute;right:.9rem;top:3.4rem;z-index:5;width:24rem;max-width:92vw;background:var(--surface);border:var(--border) solid var(--amber);border-radius:.9rem;padding:.7rem;display:none;flex-direction:column;gap:.45rem;font-size:var(--t0);box-shadow:0 1rem 3rem #000a}
 .menu.open{display:flex}
 .menu .msg2{color:var(--muted);font-size:var(--t-1);line-height:1.35}
@@ -353,7 +355,7 @@ main{flex:1 1 0;min-height:0;padding:0 .9rem .8rem;display:flex}
     </section>
 
     <section class="card chatCard" id="chatCard" aria-label="Conversation">
-      <div class="chatHead"><h2 id="chatTitle">Live conversation</h2><span class="pill" id="chatSrc" data-k="waiting" style="font-size:var(--t-1);padding:.05rem .6rem">…</span></div>
+      <div class="chatHead"><h2 id="chatTitle">Live conversation</h2><span class="pill" id="chatSrc" data-k="waiting" style="font-size:var(--t-2);padding:.05rem .6rem">…</span></div>
       <div class="replayBar" id="replayBar">
         <b id="replayLabel">REPLAY</b>
         <button class="btn" id="rpPlay">Pause</button><button class="btn" id="rpRestart">Restart</button><button class="btn" id="rpSpeed">1×</button><button class="btn" id="rpExit">Back to live</button>
@@ -496,12 +498,13 @@ function flashHero(){ hero.classList.remove("flash"); void hero.offsetWidth; her
   const row = $("previewRow");
   Object.keys(STATE_UI).forEach(s=>{ const b=el("button","btn",STATE_UI[s].w); b.addEventListener("click",()=>{ previewState=s; paintHero(); }); row.appendChild(b); });
   const f=el("button","btn","Barge-in flash"); f.addEventListener("click",flashHero); row.appendChild(f);
-  $("btnPreview").addEventListener("click",()=>{
-    const on = $("btnPreview").getAttribute("aria-pressed")!=="true";
+  window.setPreview = function(on, fromUser){
     $("btnPreview").setAttribute("aria-pressed",on); row.hidden=!on; $("prevBadge").hidden=!on;
-    if(on) setView("stage");
+    if(on && fromUser) setView("stage");
     previewState = on ? (previewState||"listening") : null; paintHero();
-  });
+  };
+  $("btnPreview").addEventListener("click",()=>setPreview($("btnPreview").getAttribute("aria-pressed")!=="true", true));
+  setPreview(true,false);   /* on by default; real events switch it off (see ingest) */
 })();
 
 /* ===================== NUMBERS view ===================== */
@@ -601,6 +604,7 @@ function q(text){ return el("span","q","“"+text+"”"); }
 
 function ingest(ev){
   if(!ev || typeof ev!=="object" || typeof ev.type!=="string") return;
+  if(previewState && $("btnPreview").getAttribute("aria-pressed")==="true") setPreview(false,false);   /* real data always wins over the preview */
   switch(ev.type){
     case "state": setHeroState(ev.state); if(ev.state!=="tool") toolName=""; paintHero(); break;
     case "user": {
