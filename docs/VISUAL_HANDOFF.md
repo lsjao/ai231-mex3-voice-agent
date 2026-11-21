@@ -49,3 +49,10 @@ Pipeline: USB mic -> Silero VAD + Smart Turn -> asr-mcp (Deepgram streaming) -> 
 
 ## Done means
 Open `docs/visual/index.html` from disk with Wi-Fi off: hero animates through all states using the REPLAY source; with the Pi reachable it switches to LIVE; metrics panel and robustness panel render; no external requests (check the network tab); no console errors; works at 1280x720 and 1920x1080; reduced-motion honored. Commit only under `docs/visual/` (no keys, no mp3, no secrets) and tell the user what you verified and what you could not.
+
+## NEW (Sat 2026-11-21 ~12:45): `task` events for a progress indicator on the left side of the jukebox
+The agent now emits `{"type":"task", ...}` lines on the same SSE feed (:8106) and in the session JSONL, one per slow tool call (search, page read, site build). Fields:
+- `id` (the tool call id), `name` (`web_search` | `read_page` | `publish_website`), `label` (a ready-to-show string: "Searching the web", "Reading a page", "Building your page"),
+- `status`: `running` (emitted at start and again every ~3 s as a heartbeat, with `elapsed_ms`), `done` (with `elapsed_ms`), `cancelled` (the user interrupted it), `resumed` (the agent is picking the interrupted request back up; no id).
+Suggested UI: a small pill on the left of the jukebox while any task is `running`, showing `label` and a ticking `elapsed_ms`; clear it on `done`/`cancelled`; a brief "back to it" flash on `resumed`.
+The existing `tool` start/end events are unchanged. Nothing in `docs/visual/` was edited for this.
