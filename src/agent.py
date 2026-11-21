@@ -21,7 +21,7 @@ from pipecat.pipeline.worker import PipelineParams, PipelineWorker
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import LLMContextAggregatorPair, LLMUserAggregatorParams
 from pipecat.services.mcp_service import MCPClient
-from pipecat.turns.user_mute.function_call_user_mute_strategy import FunctionCallUserMuteStrategy
+from src.mute import HoldPhraseMuteStrategy
 from pipecat.services.openrouter.llm import OpenRouterLLMService
 from pipecat.transports.base_transport import TransportParams
 from mcp.client.session_group import StreamableHttpParameters
@@ -114,9 +114,9 @@ async def make_pipeline(transport):
         context,
         user_params=LLMUserAggregatorParams(
             vad_analyzer=SileroVADAnalyzer(params=VADParams(confidence=VAD_CONF, start_secs=VAD_START, stop_secs=STOP_SECS)),
-            # While a tool runs the agent is mostly silent or playing its own holding phrase: ignore the mic then, so
-            # leaked echo of that phrase cannot start phantom turns.
-            user_mute_strategies=[FunctionCallUserMuteStrategy()],
+            # Ignore the mic only while the holding phrase plays (its echo could start phantom turns); after that the
+            # user can interrupt a slow tool call.
+            user_mute_strategies=[HoldPhraseMuteStrategy()],
             # A turn with no transcript (a click, the ringtone, background noise) is left unanswered instead of the
             # agent replying "I didn't catch that" to nothing.
             empty_user_turn=None,
