@@ -86,3 +86,11 @@ because schedule queries went to the news-only search filter; the agent did not 
 FIXES deployed on the Pi (not yet verified by voice): sports-mcp :8108 (ESPN scoreboard JSON: nba_games(when), nba_next_games(), times in Asia/Manila), get_current_time in weather-mcp,
 schedule words (next game/schedule/upcoming/when is...) use general search with no news filter, search results end with "Sources: <outlets>". Agent registers sports-mcp (src/agent.py TASK_SERVERS) and start_servers.sh starts it.
 NOT yet tried by voice: music commands (the user did not ask for music this time), the new NBA/time tools, "give me a source". Next: a short voice test of those, then the deck (default PowerPoint) and final tag.
+
+## Portfolio / GitHub Pages PREP (Sat ~09:10) - built later, only if time allows after the deck
+Created (with the user's go-ahead): public sandbox repo github.com/lsjao/kuya-portfolio (main, placeholder index.html that says nothing personal), Pages from main root -> https://lsjao.github.io/kuya-portfolio/.
+STILL NEEDED from the user: (1) a fine-grained token limited to ONLY lsjao/kuya-portfolio (Contents RW + Pages RW, 3-7 day expiry) saved in the local `api keys` file, never in chat/repo -> goes to ~/mex3/.env as GITHUB_PAT with DEMO_GITHUB=0 until the demo;
+(2) a few lines about themselves (display name, program, links) and which PUBLIC repos to show (candidates: flashcards, invoicegenerator, nba-gp-win-probability, daloy-express-dashboard, thesis-topic-map, ai231-me2-vcm; their PRIVATE repos must stay out);
+(3) optional: ASR keyterm "Lacuata" (ASR heard the surname as Laquata/Lakwata/Elacuata); it is personal data going into ASR config, so only with consent.
+NOT built yet: site-builder tool + github tool (tools locked to the sandbox repo, behind DEMO_GITHUB). Design: page built from what the user SAYS + their public GitHub profile (never a name-only web search); upload via the GitHub contents API; Pages takes ~1 min to go live, so the agent should say so.
+Until built, the agent answers honestly that it cannot create or push a site.
