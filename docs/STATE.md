@@ -78,3 +78,11 @@ STILL UNVERIFIED by a human voice session: fast music commands, music audibility
 NEEDS THE USER (in this order): free-form ~4 min rehearsal (say "ready") -> save /replay of that session UNEDITED as docs/visual/sample_session.json and commit only that file; deck format answer
 (default if no answer: editable PowerPoint copying the 2-page template layout, built from docs/DECK_CONTENT.md); demo hotspot SSID/password if not the stored "Jao"; GitHub sandbox repo + token only if the portfolio task is wanted.
 Then: build the 2-page deck, run echo_check.sh in the venue, final tag (e.g. final-demo-v1).
+
+## UPDATE Sat 08:45 (after the first real free-form rehearsal)
+Real session saved UNEDITED as docs/visual/sample_session.json (217 events, 22 turns, from /replay of session 20261121-083140). Silent-start rehearsal works (spoken "Ready. Go ahead." via bench/say.py, NO ringtone: the user never wanted surprise sounds).
+Findings from that rehearsal: no phantom turns or self-hearing (all 22 transcripts were real speech); person-search caution worked (no stranger facts); search turns still 8-9 s end to end; NBA "next game/schedule" questions failed
+because schedule queries went to the news-only search filter; the agent did not know the clock (asked the user for the time zone); election answers had no sources (the NY "41-22" result may be stale 2024 data labelled 2026: unverified).
+FIXES deployed on the Pi (not yet verified by voice): sports-mcp :8108 (ESPN scoreboard JSON: nba_games(when), nba_next_games(), times in Asia/Manila), get_current_time in weather-mcp,
+schedule words (next game/schedule/upcoming/when is...) use general search with no news filter, search results end with "Sources: <outlets>". Agent registers sports-mcp (src/agent.py TASK_SERVERS) and start_servers.sh starts it.
+NOT yet tried by voice: music commands (the user did not ask for music this time), the new NBA/time tools, "give me a source". Next: a short voice test of those, then the deck (default PowerPoint) and final tag.
