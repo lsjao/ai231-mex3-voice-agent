@@ -40,7 +40,7 @@ VAD_START = float(os.environ.get("VAD_START_SECS", "0.35"))  # continuous speech
 VAD_CONF = float(os.environ.get("VAD_CONFIDENCE", "0.8"))  # higher = ignores background noise/music better
 AUDIO_IN_RATE = 16000   # fdbench requires 16 kHz input
 AUDIO_OUT_RATE = 24000
-PROMPT_VERSION = "v4"
+PROMPT_VERSION = "v6"
 BENCH = os.environ.get("BENCH") == "1"  # benchmark mode: no tools (class convention: tools/agent calls off)
 HOLD_PHRASES = {"get_weather": "Let me check the weather.", "web_search": "Let me look that up.",
                 "get_current_time": "One sec."}  # spoken by OUR code
@@ -82,6 +82,18 @@ async def make_pipeline(transport):
         """Deterministic filler: the model only sometimes says a holding phrase before a tool call (dead air otherwise)."""
         name = function_calls[0].function_name if function_calls else ""
         await service.push_frame(TTSSpeakFrame(HOLD_PHRASES.get(name, "One moment."), append_to_context=False))
+
+    async def _warm_llm():
+        """One tiny request at startup so the first real turn does not pay for DNS, TLS and routing to the model."""
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=15) as c:
+                await c.post("https://openrouter.ai/api/v1/chat/completions",
+                             headers={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"},
+                             json={"model": LLM_MODEL, "max_tokens": 1, "messages": [{"role": "user", "content": "hi"}]})
+        except Exception:
+            pass
+    asyncio.create_task(_warm_llm())
 
     clients, tools = [], None
     if not BENCH:
