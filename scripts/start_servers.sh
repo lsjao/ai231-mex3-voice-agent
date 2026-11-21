@@ -23,7 +23,6 @@ start tts tts_mcp 8102
 start weather weather_mcp 8103
 start search search_mcp 8104
 start music music_mcp 8105
-start sports sports_mcp 8108
 start_any events 8106 .venv/bin/python scripts/events_server.py
 if [ -d "$HOME/mex3/docs/visual" ]; then
   start_any visual 8107 python3 -m http.server 8107 --directory "$HOME/mex3/docs/visual"

@@ -94,3 +94,6 @@ STILL NEEDED from the user: (1) a fine-grained token limited to ONLY lsjao/kuya-
 (3) optional: ASR keyterm "Lacuata" (ASR heard the surname as Laquata/Lakwata/Elacuata); it is personal data going into ASR config, so only with consent.
 NOT built yet: site-builder tool + github tool (tools locked to the sandbox repo, behind DEMO_GITHUB). Design: page built from what the user SAYS + their public GitHub profile (never a name-only web search); upload via the GitHub contents API; Pages takes ~1 min to go live, so the agent should say so.
 Until built, the agent answers honestly that it cannot create or push a site.
+
+## sports-mcp REMOVED (Sat ~09:30, user decision)
+The NBA/league scoreboard server (:8108) was a domain-specific overreach and was deleted, with no answer key kept either. Planned servers intact; extras that remain: music-mcp (user-requested) and get_current_time (inside weather-mcp). Search quality is to be improved generically (read page text, passage selection, time-zone annotation, past-date tags).
