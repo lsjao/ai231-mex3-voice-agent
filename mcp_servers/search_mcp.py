@@ -20,7 +20,8 @@ load_dotenv()
 PORT = int(os.environ.get("SEARCH_MCP_PORT", "8104"))
 TZ_NAME = os.environ.get("TZ_NAME", "Asia/Manila")
 SMALL_MODEL = os.environ.get("EXTRACT_MODEL", "google/gemini-2.5-flash-lite")   # rewriter, reranker and reader
-MAX_RETRIES = int(os.environ.get("SEARCH_RETRIES", "2"))
+MAX_RETRIES = int(os.environ.get("SEARCH_RETRIES", "1"))
+BUDGET_S = float(os.environ.get("SEARCH_BUDGET_S", "9"))   # do not start another attempt after this many seconds
 # Generic quality filter: short-video and social pages carry hashtags, not facts.
 BAD_DOMAINS = ("tiktok.com", "youtube.com", "facebook.com", "instagram.com", "pinterest.com", "x.com", "twitter.com")
 mcp = MCPServer("search-mcp")
@@ -47,6 +48,7 @@ DATE_PATTERNS = [
     (re.compile(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+({_MON})\s*,?\s+(\d{{4}})\b", re.I), "dmy"),
     (re.compile(rf"\b({_MON})\s+(\d{{1,2}})(?:st|nd|rd|th)?\s*,?\s+(\d{{4}})\b", re.I), "mdy"),
     (re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b"), "iso"),
+    (re.compile(rf"\b({_MON})\s+(\d{{1,2}})(?:st|nd|rd|th)?\b(?!\s*,?\s*\d{{4}})", re.I), "md"),   # no year: assume this year
 ]
 
 
@@ -60,6 +62,8 @@ def tag_past_dates(text: str, today: datetime.date | None = None) -> str:
             try:
                 if kind == "dmy":
                     d = datetime.date(int(m.group(3)), MONTHS[m.group(2).lower()], int(m.group(1)))
+                elif kind == "md":
+                    d = datetime.date(today.year, MONTHS[m.group(1).lower()], int(m.group(2)))
                 elif kind == "mdy":
                     d = datetime.date(int(m.group(3)), MONTHS[m.group(1).lower()], int(m.group(2)))
                 else:
@@ -235,7 +239,7 @@ READ_PROMPT = (
     "Answer in at most three plain sentences that can be read aloud: no lists, symbols or links. "
     "Give the specific facts asked for (names, numbers, times, results) and say which source and date they come from. "
     "Always state the time zone of any time; use the conversions written in brackets when present, and if the question asks "
-    "for a different zone than the page uses, say what zone the page uses. Prefer the most recent information, and notice "
+    "for a different zone than the page uses, say what zone the page uses, and never state how zones relate to each other unless a page says so. Prefer the most recent information, and notice "
     "dates that are already past compared with the current date. If the pages do not contain the asked-for fact, reply "
     "starting with NOT FOUND and say briefly what the pages do contain.")
 
@@ -269,7 +273,10 @@ async def web_search(query: str) -> str:
         return "Search is not available because the search key is missing."
     now = datetime.datetime.now(ZoneInfo(TZ_NAME))
     hint, answer, hosts, note = "", None, [], ""
+    started = asyncio.get_event_loop().time()
     for attempt in range(MAX_RETRIES + 1):
+        if attempt and asyncio.get_event_loop().time() - started > BUDGET_S:
+            break
         queries, news = await rewrite(query, now, hint)
         cands = await gather(key, queries, news, "basic" if attempt == 0 else "advanced")
         if not cands and news:                      # nothing recent: retry without the news filter
