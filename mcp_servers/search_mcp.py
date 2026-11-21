@@ -167,11 +167,13 @@ REWRITE_PROMPT = (
     "Write 2 short queries with different wording that name the specific thing asked for (entity, and the quantity or "
     "attribute wanted, such as a score, a price, a time, a name, a number). When the question uses a relative time such as "
     "today, tonight, latest, current or next, put the explicit date, month or year in the queries using the current date given. "
+    "Keep every name, username, number and spelling from the question exactly as given; never swap them for a different topic. "
     "Also decide news: true only if the person wants reporting on recent events, false for schedules, prices, facts and "
-    "everything else. Reply with JSON only: {\"queries\": [\"...\", \"...\"], \"news\": true|false}")
+    "everything else; and person: true if the question is about a specific named individual. "
+    "Reply with JSON only: {\"queries\": [\"...\", \"...\"], \"news\": true|false, \"person\": true|false}")
 
 
-async def rewrite(query: str, now: datetime.datetime, hint: str = "") -> tuple[list[str], bool]:
+async def rewrite(query: str, now: datetime.datetime, hint: str = "") -> tuple[list[str], bool, bool]:
     user = f"Current date: {now:%A %d %B %Y}. Time zone of the person: {TZ_NAME}.{NL}Spoken question: {query}"
     if hint:
         user += f"{NL}A previous search did not find the answer. The pages it read were about: {hint}{NL}Write different queries."
@@ -180,10 +182,10 @@ async def rewrite(query: str, now: datetime.datetime, hint: str = "") -> tuple[l
         data = json.loads(re.search(r"\{.*\}", raw, re.S).group(0))
         qs = [str(q).strip() for q in data["queries"] if str(q).strip()][:2]
         if qs:
-            return qs, bool(data.get("news"))
+            return qs, bool(data.get("news")), bool(data.get("person"))
     except Exception:
         pass
-    return [query if re.search(r"(19|20)\d{2}", query) else f"{query} {now.year}"], False
+    return [query if re.search(r"(19|20)\d{2}", query) else f"{query} {now.year}"], False, looks_like_person(query)
 
 
 async def tavily(key: str, q: str, news: bool, depth: str) -> list[dict]:
@@ -244,8 +246,9 @@ READ_PROMPT = (
     "dates that are already past compared with the current date. Answer exactly what was asked: if a page is about a "
     "different event, year, measure or moment than the question (for example a different year's schedule, or odds for a "
     "different outcome), do not use it, or say how it differs. If a source gives no date, say its date is unknown. When "
-    "sources disagree on a number, give the one with the newest as-of date and say the others differ. If the pages do not "
-    "contain the asked-for fact, reply starting with NOT FOUND and say briefly what the pages do contain.")
+    "sources disagree on a number, give the one with the newest as-of date and say the others differ. If the pages "
+    "contain part of the answer, give that part and say what is missing. Reply starting with NOT FOUND only when the pages do "
+    "not address the subject at all, and then say briefly what they are about.")
 
 
 def passages(item: dict, query: str, today: datetime.date) -> str:
@@ -276,12 +279,13 @@ async def web_search(query: str) -> str:
     if not key:
         return "Search is not available because the search key is missing."
     now = datetime.datetime.now(ZoneInfo(TZ_NAME))
-    hint, answer, hosts, note = "", None, [], ""
+    hint, answer, hosts, note, is_person = "", None, [], "", False
     started = asyncio.get_event_loop().time()
     for attempt in range(MAX_RETRIES + 1):
         if attempt and asyncio.get_event_loop().time() - started > BUDGET_S:
             break
-        queries, news = await rewrite(query, now, hint)
+        queries, news, person = await rewrite(query, now, hint)
+        is_person = is_person or person
         cands = await gather(key, queries, news, FIRST_DEPTH if attempt == 0 else "basic")   # fast first (~1.5 s), deeper only if needed
         if not cands and news:                      # nothing recent: retry without the news filter
             cands = await gather(key, queries, False, FIRST_DEPTH)
@@ -299,9 +303,40 @@ async def web_search(query: str) -> str:
         out = "I found nothing useful for that search."
     else:
         out = answer + (" Sources: " + ", ".join(hosts) + "." if hosts else "")
-        if looks_like_person(query):
+        if is_person or looks_like_person(query):
             out = CAUTION + out
     _trace(now, query, hosts, out, note)
+    return out
+
+
+@mcp.tool()
+async def read_page(url: str, question: str = "") -> str:
+    """Read one specific web page and tell the person what it says. Use this when the person gives a web address or a
+    username-style address (for example a profile page such as github.com/<username>) instead of searching for it, because
+    search engines often do not index individual pages. question: what the person wants to know from it (optional)."""
+    key = os.environ.get("TAVILY_API_KEY")
+    if not key:
+        return "Reading pages is not available because the search key is missing."
+    url = url.strip()
+    if not re.match(r"^https?://", url):
+        url = "https://" + url
+    now = datetime.datetime.now(ZoneInfo(TZ_NAME))
+    try:
+        r = await _client.post("https://api.tavily.com/extract", headers={"Authorization": f"Bearer {key}"},
+                               json={"urls": [url], "extract_depth": "basic"}, timeout=25)
+        r.raise_for_status()
+        res = r.json().get("results", [])
+    except Exception:
+        return "I could not open that page right now."
+    if not res:
+        return "I could not open that page. It may not exist or may be private."
+    q = question.strip() or "What is this page about? Give the owner or subject, a short bio if any, and any projects or items listed."
+    item = {"url": url, "raw_content": res[0].get("raw_content", ""), "content": ""}
+    body = " ... ".join(best_chunks(item["raw_content"], q, now.date(), k=6, size=900)) or clean(item["raw_content"])[:3500]
+    item["content"] = body[:3500]
+    ans = await read(q, now, [item])
+    out = (ans or "I opened the page but could not make sense of it.") + f" Source: {host_of(url)}."
+    _trace(now, "read_page " + url, [host_of(url)], out, "read_page")
     return out
 
 
