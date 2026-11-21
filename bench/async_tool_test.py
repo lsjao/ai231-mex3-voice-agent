@@ -65,7 +65,11 @@ async def main():
     q1, q2 = sys.argv[1] if len(sys.argv) > 1 else "What is the latest news about the Mars rover?", "Quick question: what is twelve times eleven?"
     mark("USER", q1)
     await worker.queue_frames([LLMMessagesAppendFrame(messages=[{"role": "user", "content": q1}], run_llm=True)])
-    await asyncio.sleep(2.2)                                     # the search is running now
+    for _ in range(60):                                          # wait until the search itself has started, then interrupt it
+        await asyncio.sleep(0.25)
+        if any(k == "tool-start" and "web_search" in w for _, k, w in LOG):
+            break
+    await asyncio.sleep(1.0)
     mark("USER", q2 + "   (interrupts the search)")
     await worker.queue_frames([InterruptionFrame(), LLMMessagesAppendFrame(messages=[{"role": "user", "content": q2}], run_llm=True)])
     await asyncio.sleep(22)
