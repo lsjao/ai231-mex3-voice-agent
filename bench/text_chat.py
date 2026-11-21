@@ -27,10 +27,11 @@ from pipecat.services.openrouter.llm import OpenRouterLLMService
 from src.agent import LLM_MODEL, load_prompt, load_task_tools
 
 T0 = time.monotonic()
-buf, state = [], {"pending": 0, "replied": asyncio.Event()}
+buf, state = [], {"pending": 0, "replied": asyncio.Event(), "last": time.monotonic()}
 
 
 def mark(kind, what=""):
+    state["last"] = time.monotonic()
     print(f"{time.monotonic() - T0:6.1f}s  {kind:10s} {what}", flush=True)
 
 
@@ -66,11 +67,11 @@ async def main():
         state["replied"].clear()
         mark("USER", line)
         await worker.queue_frames([LLMMessagesAppendFrame(messages=[{"role": "user", "content": line}], run_llm=True)])
-        try:
-            await asyncio.wait_for(state["replied"].wait(), 60)
-        except asyncio.TimeoutError:
-            mark("timeout")
-        await asyncio.sleep(1.0)
+        t_start = time.monotonic()
+        while time.monotonic() - t_start < 90:                    # a turn is over when nothing has happened for 7 s
+            await asyncio.sleep(0.5)
+            if state["pending"] == 0 and time.monotonic() - state["last"] > 7:
+                break
     await worker.cancel()
     for c in clients:
         await c.close()
