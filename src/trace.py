@@ -113,13 +113,13 @@ class TraceObserver(BaseObserver):
         elif isinstance(f, TTSStartedFrame):
             if self._t_tts_start is None:
                 self._t_tts_start = now
-        elif isinstance(f, FunctionCallInProgressFrame) and self._once(f):
+        elif isinstance(f, FunctionCallInProgressFrame) and f.tool_call_id not in self._tool_t0:   # one event per call id
             self._tool_open = True
             self._tool_t0[f.tool_call_id] = now
             events.emit("tool", name=f.function_name, phase="start")
             events.emit("state", state="tool")
-        elif isinstance(f, FunctionCallResultFrame) and self._once(f):
-            ms = int(round((now - self._tool_t0.pop(f.tool_call_id, now)) * 1000))
+        elif isinstance(f, FunctionCallResultFrame) and f.tool_call_id in self._tool_t0:           # ignore the extra copies
+            ms = int(round((now - self._tool_t0.pop(f.tool_call_id)) * 1000))
             self._tool_ms += ms / 1000
             self._tool_open = False
             events.emit("tool", name=f.function_name, phase="end", ms=ms)
