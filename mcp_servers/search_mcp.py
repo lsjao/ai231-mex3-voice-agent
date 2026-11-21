@@ -22,6 +22,7 @@ TZ_NAME = os.environ.get("TZ_NAME", "Asia/Manila")
 SMALL_MODEL = os.environ.get("EXTRACT_MODEL", "google/gemini-2.5-flash-lite")   # rewriter, reranker and reader
 MAX_RETRIES = int(os.environ.get("SEARCH_RETRIES", "1"))
 FIRST_DEPTH = os.environ.get("SEARCH_DEPTH_FIRST", "fast")   # measured on the Pi: fast ~1.5 s, basic ~4.4 s, advanced ~7 s
+HEDGE = os.environ.get("SEARCH_HEDGE", "1") == "1"   # run fast + deeper search in parallel on the first attempt
 BUDGET_S = float(os.environ.get("SEARCH_BUDGET_S", "9"))   # do not start another attempt after this many seconds
 # Generic quality filter: short-video and social pages carry hashtags, not facts.
 BAD_DOMAINS = ("tiktok.com", "youtube.com", "facebook.com", "instagram.com", "pinterest.com", "x.com", "twitter.com")
@@ -281,22 +282,50 @@ async def web_search(query: str) -> str:
     now = datetime.datetime.now(ZoneInfo(TZ_NAME))
     hint, answer, hosts, note, is_person = "", None, [], "", False
     started = asyncio.get_event_loop().time()
+
+    def good(a):
+        return bool(a) and not a.upper().startswith("NOT FOUND")
+
+    async def answer_from(cands):
+        top = await rerank(query, now, cands)
+        return await read(query, now, top), list(dict.fromkeys(host_of(c["url"]) for c in top))
+
     for attempt in range(MAX_RETRIES + 1):
         if attempt and asyncio.get_event_loop().time() - started > BUDGET_S:
             break
         queries, news, person = await rewrite(query, now, hint)
         is_person = is_person or person
-        cands = await gather(key, queries, news, FIRST_DEPTH if attempt == 0 else "basic")   # fast first (~1.5 s), deeper only if needed
+        if attempt == 0 and HEDGE:
+            # Hedge: start the fast AND the deeper search together. Usually the fast one answers (deeper is cancelled);
+            # when it does not, the deeper results are already on their way, so there is no second sequential round trip.
+            fast_t = asyncio.create_task(gather(key, queries, news, "fast"))
+            deep_t = asyncio.create_task(gather(key, queries, news, "basic"))
+            fast = await fast_t
+            ans, hs = await answer_from(fast) if fast else (None, [])
+            if good(ans):
+                deep_t.cancel()
+                answer, hosts, note = ans, hs, f"attempt 0 (fast won): queries={queries} news={news}"
+                break
+            deep = await deep_t
+            merged = list({c["url"]: c for c in (deep + fast)}.values()) if (deep or fast) else []
+            if not merged and news:
+                merged = await gather(key, queries, False, "basic")
+            if merged:
+                answer, hosts = await answer_from(merged)
+                note = f"attempt 0 (deep): queries={queries} news={news}"
+                if good(answer):
+                    break
+            hint = (answer or ans or "unrelated material")[:200]
+            continue
+        cands = await gather(key, queries, news, FIRST_DEPTH if attempt == 0 else "basic")
         if not cands and news:                      # nothing recent: retry without the news filter
             cands = await gather(key, queries, False, FIRST_DEPTH)
         if not cands:
             hint, note = "nothing at all", f"attempt {attempt}: no pages for {queries}"
             continue
-        top = await rerank(query, now, cands)
-        hosts = list(dict.fromkeys(host_of(c["url"]) for c in top))
-        answer = await read(query, now, top)
+        answer, hosts = await answer_from(cands)
         note = f"attempt {attempt}: queries={queries} news={news}"
-        if answer and not answer.upper().startswith("NOT FOUND"):
+        if good(answer):
             break
         hint = (answer or "unrelated material")[:200]
     if not answer:
