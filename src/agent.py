@@ -40,7 +40,7 @@ VAD_START = float(os.environ.get("VAD_START_SECS", "0.35"))  # continuous speech
 VAD_CONF = float(os.environ.get("VAD_CONFIDENCE", "0.8"))  # higher = ignores background noise/music better
 AUDIO_IN_RATE = 16000   # fdbench requires 16 kHz input
 AUDIO_OUT_RATE = 24000
-PROMPT_VERSION = "v7"
+PROMPT_VERSION = "v8"
 BENCH = os.environ.get("BENCH") == "1"  # benchmark mode: no tools (class convention: tools/agent calls off)
 HOLD_PHRASES = {"get_weather": "Let me check the weather.", "web_search": "Let me look that up.",
                 "get_current_time": "One sec."}  # spoken by OUR code
