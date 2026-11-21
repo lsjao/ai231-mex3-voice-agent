@@ -137,6 +137,49 @@ def best_chunks(text: str, query: str, today: datetime.date, k: int = 3, size: i
     return [c for c in out if sum(ch.isalnum() for ch in c) > 0.55 * max(len(c), 1)]   # drop passages that are mostly symbols
 
 
+def _trace(now, query: str, hosts: list, out: str) -> None:
+    """Raw trace so a bad answer can be pinned on retrieval (here) or on the model (what it said after)."""
+    try:
+        import json as _j
+        import pathlib as _p
+        f = _p.Path(__file__).resolve().parent.parent / "logs" / "search_trace.jsonl"
+        with f.open("a", encoding="utf-8") as fh:
+            fh.write(_j.dumps({"t": now.isoformat(timespec="seconds"), "query": query, "sources": hosts, "result": out}) + chr(10))
+    except Exception:
+        pass
+
+
+EXTRACT_MODEL = os.environ.get("EXTRACT_MODEL", "google/gemini-2.5-flash-lite")
+EXTRACT_PROMPT = (
+    "You read web pages to answer one spoken question. Use ONLY the page text below; never use your own memory. "
+    "Answer in at most three plain sentences that can be read aloud: no lists, symbols or links. "
+    "Give the specific facts asked for (names, numbers, times, results) and say which source and date they come from. "
+    "Always state the time zone of any time, converting only when the page states the zone; if the question asks for a "
+    "different zone than the page uses, say what zone the page uses. Prefer the most recent information, and notice dates "
+    "that are already past compared with the current date. If the pages do not contain the asked-for fact, reply starting "
+    "with NOT FOUND and say briefly what the pages do contain.")
+
+
+async def extract_answer(query: str, now: datetime.datetime, sources: list[tuple[str, str, str]]) -> str | None:
+    """Have a small fast model read the page text and answer the question (search-then-read). Returns None on any failure
+    so the caller falls back to the plain passages."""
+    key = os.environ.get("OPENROUTER_API_KEY")
+    if not key or not sources:
+        return None
+    nl = chr(10)
+    pages = (nl * 2).join(f"SOURCE {i + 1}: {host} {pub}" + nl + text for i, (host, pub, text) in enumerate(sources))
+    user = f"Current date and time: {now:%A %d %B %Y, %I:%M %p} {TZ_NAME}." + nl + f"Question: {query}" + nl * 2 + pages
+    try:
+        r = await _client.post("https://openrouter.ai/api/v1/chat/completions", headers={"Authorization": f"Bearer {key}"},
+                               json={"model": EXTRACT_MODEL, "temperature": 0, "max_tokens": 220,
+                                     "messages": [{"role": "system", "content": EXTRACT_PROMPT},
+                                                  {"role": "user", "content": user}]}, timeout=12)
+        r.raise_for_status()
+        return clean(r.json()["choices"][0]["message"]["content"]) or None
+    except Exception:
+        return None
+
+
 @mcp.tool()
 async def web_search(query: str) -> str:
     """Search the web for current information (news, schedules, results, facts). Reads the pages and returns the passages that
@@ -179,6 +222,21 @@ async def web_search(query: str) -> str:
             hosts.append(host)
     if not evidence and not d.get("answer"):
         return "I found nothing useful for that search."
+    pages = []
+    for item in d.get("results", [])[:3]:
+        host = re.sub(r"^www\.", "", re.sub(r"^https?://", "", item.get("url", "")).split("/")[0])
+        body = " ... ".join(best_chunks(item.get("raw_content") or "", query, now.date(), k=5, size=900)) or clean(item.get("content", ""))
+        pub = f"(published {item['published_date'][:16]})" if item.get("published_date") else ""
+        pages.append((host, pub, body[:3500]))
+    read = await extract_answer(query, now, pages)
+    if read:
+        out = read + (" Sources: " + ", ".join(hosts) + "." if hosts else "")
+        if looks_like_person(query):
+            out = ("CAUTION: this is a search for a person by name. These results may describe someone else who shares the "
+                   "name. Do not present them as facts about the user; say they may not be the same person and ask for a "
+                   "distinguishing detail. " + out)
+        _trace(now, query, hosts, out)
+        return out
     header = (f"Now: {now:%A %d %B %Y, %I:%M %p} {TZ_NAME}. Times in the sources are as written by each source; "
               f"state which time zone you mean. ")
     text = header + (" ".join(evidence) if evidence else clean(d.get("answer", "")))   # the provider's own summary is unverified: page text only
@@ -188,13 +246,7 @@ async def web_search(query: str) -> str:
                 "name. Do not present them as facts about the user; say they may not be the same person and ask for a "
                 "distinguishing detail. " + text)
     out = text + (" Sources: " + ", ".join(hosts) + "." if hosts else "")
-    try:   # raw trace so a bad answer can be pinned on retrieval (here) or on the model (what it said after)
-        import json as _j, pathlib as _p
-        f = _p.Path(__file__).resolve().parent.parent / "logs" / "search_trace.jsonl"
-        with f.open("a", encoding="utf-8") as fh:
-            fh.write(_j.dumps({"t": now.isoformat(timespec="seconds"), "query": query, "sources": hosts, "result": out}) + chr(10))
-    except Exception:
-        pass
+    _trace(now, query, hosts, out)
     return out
 
 
