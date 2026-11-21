@@ -138,6 +138,8 @@ def judge(client, criterion, user, tool_result, reply):
               "Answer with exactly one word: PASS or FAIL.")
     r = client.post("https://openrouter.ai/api/v1/chat/completions", headers={"Authorization": f"Bearer {KEY}"},
                     json={"model": JUDGE_MODEL, "messages": [{"role": "user", "content": prompt}], "temperature": 0, "max_tokens": 5})
+    if r.status_code != 200:
+        print("JUDGE HTTP", r.status_code, r.text[:300], "| criterion:", criterion); return False   # a failed judge call counts as a failure, never a crash
     r.raise_for_status()
     return "PASS" in r.json()["choices"][0]["message"]["content"].upper()
 
