@@ -18,6 +18,7 @@ _client = httpx.AsyncClient(timeout=15)
 
 
 def clean(text: str) -> str:
+    text = re.sub(r"!?\((?:https?:)?/[^)\s]*\)", "", text)          # page-navigation link targets like (/games) or (/img.png)
     text = re.sub(r"https?://\S+", "", text)
     text = re.sub(r"[*_#`>\[\]]", "", text)
     return re.sub(r"\s+", " ", text).strip()
@@ -71,7 +72,7 @@ def tag_past_dates(text: str, today: datetime.date | None = None) -> str:
                     d = datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
             except ValueError:
                 continue
-            if d < today:
+            if d < today - datetime.timedelta(days=1):   # one day of slack: a game dated yesterday in the US can be live now elsewhere
                 hits.append(m.end())
     for pos in sorted(set(hits), reverse=True):
         text = text[:pos] + " (already in the past)" + text[pos:]
@@ -132,7 +133,8 @@ def best_chunks(text: str, query: str, today: datetime.date, k: int = 3, size: i
         return sum(cl.count(w) for w in words) + 3 * sum(1 for d in day_forms if d in cl)
 
     ranked = [c for c in sorted(chunks, key=score, reverse=True)[:k] if score(c) > 0]
-    return [clean(c) for c in ranked]
+    out = [clean(c) for c in ranked]
+    return [c for c in out if sum(ch.isalnum() for ch in c) > 0.55 * max(len(c), 1)]   # drop passages that are mostly symbols
 
 
 @mcp.tool()
@@ -157,6 +159,16 @@ async def web_search(query: str) -> str:
         d = await _search(key, q, "news" if newsy else "general", "month" if newsy else "year", deep=newsy, raw=True)
     if not d.get("results") and not d.get("answer"):
         d = await _search(key, q, "general", None, deep=True, raw=True)
+    def matched(data: dict) -> bool:
+        return any(best_chunks(i.get("raw_content") or "", query, now.date()) for i in data.get("results", [])[:3])
+    if not matched(d):   # nothing on any page matches the question: look deeper once before giving back weak evidence
+        os.environ["SEARCH_DEPTH_NEWS"] = "advanced"
+        try:
+            d2 = await _search(key, q, "general", None, deep=True, raw=True)
+            if matched(d2):
+                d = d2
+        finally:
+            os.environ["SEARCH_DEPTH_NEWS"] = "basic"
     evidence, hosts = [], []
     for item in d.get("results", [])[:3]:
         host = re.sub(r"^www\.", "", re.sub(r"^https?://", "", item.get("url", "")).split("/")[0])

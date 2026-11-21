@@ -88,7 +88,14 @@ def run_once(client, system, user, tool_result):
         for c in calls:
             msgs.append({"role": "tool", "tool_call_id": c["id"],
                          "content": tag_past_dates(tool_result) if tool_result else "No results."})
-        final = (chat(client, msgs).get("content") or "").strip()
+        m2 = chat(client, msgs)
+        if m2.get("tool_calls"):                      # the model searched again: answer the same canned result, then final reply
+            calls2 = m2["tool_calls"]
+            msgs.append({"role": "assistant", "content": m2.get("content"), "tool_calls": calls2})
+            for c in calls2:
+                msgs.append({"role": "tool", "tool_call_id": c["id"], "content": tag_past_dates(tool_result) if tool_result else "No results."})
+            m2 = chat(client, msgs)
+        final = (m2.get("content") or "").strip()
     return called, first_text, final
 
 
