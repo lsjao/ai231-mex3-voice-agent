@@ -26,7 +26,7 @@
 3. `bash ~/mex3/scripts/start_servers.sh` (idempotent; should show 8 "listening" lines) and `python bench/check_keys.py` (credits).
 4. `bash ~/mex3/scripts/echo_check.sh`.
 5. `bash ~/mex3/scripts/run_agent.sh` (it says "Ready. Go ahead." out loud; the visual flips to LIVE at the same moment). Or use `docs/visual/demo.ps1` from the laptop.
-6. One free-form warm-up question, one weather question, one "play some focus music" / "stop the music". Then the real demo.
+6. One free-form warm-up question, one weather question, one "play some focus music" / "stop the music", and one search you interrupt with a quick question (it should answer, then return to the search). Then the real demo.
 Voice commands that work with NO LLM delay (~1.2 s including the spoken acknowledgement): "stop / pause / resume the music", "next / previous song", "louder / quieter".
 
 ## 4. GitHub Pages website task (ready; switched off until you say so)
