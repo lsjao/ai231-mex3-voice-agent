@@ -169,6 +169,7 @@ async def build(transport, log_dir: Path):
         params=PipelineParams(audio_in_sample_rate=AUDIO_IN_RATE, audio_out_sample_rate=AUDIO_OUT_RATE,
                               enable_metrics=True, enable_usage_metrics=True),
         observers=[TraceObserver()] + ([resume] if resume else []),
+        idle_timeout_secs=None,          # a live demo has quiet stretches: never shut the agent down for silence (the default is 5 minutes)
     )
     if resume:
         resume.attach(worker)
