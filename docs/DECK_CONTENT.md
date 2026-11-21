@@ -1,3 +1,6 @@
+> **Superseded for the submitted deck:** the final 2-page deck (MEX3_deck.pptx) and README.md carry the current numbers and the search/site/barge-in changes made later on 2026-11-21.
+> This file keeps the benchmark details and the WER/barge-in investigation notes from the final fdbench runs.
+
 # MEX3 deck content (2-page template, sections 1-6). Benchmark numbers are from the final run 2026-11-21_04-16-23.
 
 ## 1. SYSTEM DIAGRAM (see docs/agent_visual.html for the interactive version)
