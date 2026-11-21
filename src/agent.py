@@ -40,7 +40,7 @@ VAD_START = float(os.environ.get("VAD_START_SECS", "0.35"))  # continuous speech
 VAD_CONF = float(os.environ.get("VAD_CONFIDENCE", "0.8"))  # higher = ignores background noise/music better
 AUDIO_IN_RATE = 16000   # fdbench requires 16 kHz input
 AUDIO_OUT_RATE = 24000
-PROMPT_VERSION = "v9"
+PROMPT_VERSION = "v10"
 BENCH = os.environ.get("BENCH") == "1"  # benchmark mode: no tools (class convention: tools/agent calls off)
 HOLD_PHRASES = {"get_weather": "Let me check the weather.", "web_search": "Let me look that up.",
                 "get_current_time": "One sec.", "publish_website": "Building the page now.", "read_page": "Let me open that page."}  # spoken by OUR code
@@ -65,7 +65,9 @@ def load_prompt(version: str | None = None) -> str:
     now = datetime.now(ZoneInfo(os.environ.get("TZ_NAME", "Asia/Manila")))
     base = (ROOT / "prompts" / f"system_{version or PROMPT_VERSION}.md").read_text(encoding="utf-8").strip()
     if "{{today}}" in base:
-        return base.replace("{{today}}", f"{now:%A, %d %B %Y}")
+        tz = os.environ.get("TZ_NAME", "Asia/Manila")
+        return (base.replace("{{today}}", f"{now:%A, %d %B %Y}").replace("{{tz}}", tz)
+                .replace("{{place}}", tz.split("/")[-1].replace("_", " ")))
     return (base + f"\n\nToday is {now:%A, %d %B %Y}; the current year is {now.year}. Never state the date or year "
             f"from memory. For anything recent or time-sensitive (latest, now, this year, current office holders, "
             f"scores, results), call web_search first and answer from its result.")
