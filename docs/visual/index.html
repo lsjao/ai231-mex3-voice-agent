@@ -52,7 +52,8 @@ main{flex:1 1 0;min-height:0;padding:0 2rem 1.6rem;display:flex}
 
 /* ---------- STAGE view: φ : 1 columns, jukebox about 0.618 of the height ---------- */
 #vStage{grid-template-columns:minmax(0,1.618fr) minmax(0,1fr)}
-.left{display:grid;grid-template-rows:minmax(0,2.6fr) minmax(0,1fr);gap:1.2rem;min-height:0}
+.left{display:flex;flex-direction:column;min-height:0}
+.left .heroCard{flex:1 1 0}
 .heroCard{position:relative;display:flex;justify-content:center;padding:.3rem .6rem;overflow:hidden;background:radial-gradient(ellipse at 50% 55%,#33111a 0%,rgba(36,16,22,0) 72%)}
 :root.hc .heroCard{background:none}
 .hero{position:relative;height:100%;min-height:0;display:flex;justify-content:center;width:100%}
@@ -75,18 +76,6 @@ main{flex:1 1 0;min-height:0;padding:0 2rem 1.6rem;display:flex}
 .pbtn.fx i{color:var(--coral)}
 
 /* latency tiles */
-.latCard{display:flex;flex-direction:column;justify-content:space-between}
-.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;flex:1 1 auto;margin-top:.2rem}
-.tile{padding:.35rem .5rem;display:flex;flex-direction:column;justify-content:center;min-width:0}
-.tile .l{font-size:var(--t-1);color:var(--muted);line-height:1.15}
-.tile .v{font-size:var(--t3);font-weight:700;line-height:1.1;white-space:nowrap}
-.tile .m{font-size:var(--t-1);font-weight:700;min-height:1rem}
-.tile .tb{position:relative;height:.45rem;border-radius:.3rem;background:var(--surface2);margin-top:.2rem}
-.tile .tb i{position:absolute;left:0;top:0;bottom:0;border-radius:.3rem;background:var(--muted);width:0}
-.tile .tb s{position:absolute;left:50%;top:-.15rem;bottom:-.15rem;width:2px;background:var(--text);text-decoration:none}
-.tile.ok .v,.tile.ok .m{color:var(--good)} .tile.ok .tb i{background:var(--good)}
-.tile.miss .v,.tile.miss .m{color:var(--miss)} .tile.miss .tb i{background:var(--miss)}
-.sess{font-size:var(--t-1);color:var(--muted);margin:.3rem 0 0;line-height:1.3}
 
 /* ---------- chat ---------- */
 .chatCard{display:flex;flex-direction:column;padding:.4rem 1rem .8rem}
@@ -105,7 +94,6 @@ main{flex:1 1 0;min-height:0;padding:0 2rem 1.6rem;display:flex}
 .chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.45rem}
 .chip{font-size:var(--t-2);font-weight:500;border-radius:99px;padding:.05rem .5rem;background:rgba(0,0,0,.3);white-space:nowrap;color:var(--muted)}
 .chip b{font-weight:700}
-.chip.ok{color:var(--good)} .chip.miss{color:var(--miss)}
 .evt{align-self:center;font-size:var(--t-1);color:var(--muted);display:flex;align-items:baseline;justify-content:center;gap:.4rem;flex-wrap:wrap;text-align:center}
 .evt .ic{font-style:normal;color:var(--amber)}
 .evt.tool b{color:var(--amber);font-weight:700}
@@ -278,11 +266,6 @@ main{flex:1 1 0;min-height:0;padding:0 2rem 1.6rem;display:flex}
         <div class="stateLabel" aria-live="polite"><b id="stText"><em id="stIcon">◌</em><span id="stWord">Idle</span></b><span id="stSub"></span></div>
       </div>
 
-      <div class="card latCard" aria-label="Latest turn latency">
-        <h2 style="margin:0">Latest turn <span id="ltTurn" style="text-transform:none;letter-spacing:0"></span></h2>
-        <div class="tiles" id="tiles"></div>
-        <p class="sess" id="sess">No turns yet.</p>
-      </div>
     </section>
 
     <section class="card chatCard" id="chatCard" aria-label="Conversation">
@@ -296,10 +279,9 @@ main{flex:1 1 0;min-height:0;padding:0 2rem 1.6rem;display:flex}
 <script>
 "use strict";
 /* =====================================================================
-   DATA. Every number below comes from a real run; the source is shown on screen.
+   Constants. No benchmark or sample content lives in this file.
    Benchmark: fd-benchmark/runs/kuya-jukebox/2026-11-21_04-16-23/summary.md (tools OFF, class convention).
    ===================================================================== */
-const TARGET_MS = {asr:800, llm:1500, tts:600, e2e:4000};
 const STATE_UI = {
   idle:{w:"Idle", i:"◌", sub:"ready for you"}, listening:{w:"Listening", i:"●", sub:""},
   thinking:{w:"Thinking", i:"◐", sub:""}, speaking:{w:"Speaking", i:"♪", sub:""},
@@ -369,28 +351,6 @@ function flashHero(){ hero.classList.remove("flash"); void hero.offsetWidth; her
   setPreview(true,false);   /* on by default; real events switch it off (see ingest) */
 })();
 
-/* ===================== live latency tiles + session stats ===================== */
-const TILE_DEF = [["asr","ASR final"],["llm","LLM first token"],["tts","TTS first audio"],["e2e","End-to-end"]];
-const tileEls = {};
-(function(){ const t=$("tiles"); TILE_DEF.forEach(([k,l])=>{ const d=el("div","tile"); const lab=el("span","l",l), v=el("span","v","—"), m=el("span","m"," ");
-  const tb=el("div","tb"); const fi=el("i"), tg=el("s"); tb.append(fi,tg); d.append(lab,v,m,tb); t.appendChild(d); tileEls[k]={d,v,m,fi}; }); })();
-function setTile(k, ms){
-  const t = tileEls[k]; if(ms==null){ t.v.textContent="—"; t.m.textContent=" "; t.d.className="tile"; t.fi.style.width="0"; return; }
-  const ok = ms <= TARGET_MS[k]; t.v.textContent = sec(ms); t.m.textContent = (ok ? "✓ " : "✕ ") + "target < "+sec(TARGET_MS[k]); t.d.className = "tile " + (ok?"ok":"miss");
-  t.fi.style.width = Math.min(100, ms/(2*TARGET_MS[k])*100) + "%";
-}
-const sessions = new Map();
-function sessStats(id){ if(!sessions.has(id)) sessions.set(id,{plain:[],tool:[]}); return sessions.get(id); }
-let lastSession = null;
-function paintSess(){
-  const s = lastSession!=null ? sessions.get(lastSession) : null;
-  if(!s || (!s.plain.length && !s.tool.length)){ $("sess").textContent = "No agent replies measured yet in this session."; return; }
-  const p = median(s.plain), t = median(s.tool);
-  $("sess").textContent = "This session: " + (s.plain.length ? "plain turns "+s.plain.length+", median E2E "+sec(p) : "no plain turns yet") + " · " +
-    (s.tool.length ? "tool turns "+s.tool.length+", median E2E "+sec(t) : "no tool turns yet") + ". Tool turns are slower and not part of the benchmark.";
-}
-paintSess();
-
 /* ===================== chat feed ===================== */
 feed.addEventListener("scroll",()=>{ pinned = feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 40; });
 const turns = new Map(), toolRows = new Map();
@@ -398,15 +358,13 @@ let emptyEl = null;
 function showEmpty(title, text){ clearEmpty(); emptyEl = el("li","empty"); emptyEl.appendChild(el("b",null,title)); emptyEl.appendChild(el("span",null,text)); feed.appendChild(emptyEl); }
 function clearEmpty(){ if(emptyEl){ emptyEl.remove(); emptyEl=null; } }
 function resetView(){
-  feed.textContent=""; turns.clear(); toolRows.clear(); sessions.clear(); lastSession=null; emptyEl=null; seen.clear();
-  TILE_DEF.forEach(([k])=>setTile(k,null)); $("ltTurn").textContent=""; paintSess();
+  feed.textContent=""; turns.clear(); toolRows.clear(); lastSession=null; emptyEl=null; seen.clear();
   heroBase="idle"; musicTitle=""; musicDucked=false; toolName=""; paintHero(); pinned=true;
 }
-function chip(label, ms, key){
-  const ok = ms <= TARGET_MS[key], c = el("span","chip "+(ok?"ok":"miss"));
-  c.appendChild(document.createTextNode(label+" ")); c.appendChild(el("b",null,sec(ms))); c.appendChild(document.createTextNode(ok?" ✓":" ✕"));
-  c.title = "target < "+sec(TARGET_MS[key]); c.setAttribute("aria-label", label+" "+sec(ms)+(ok?", within target":", over target")); return c;
+function chip(label, ms){
+  const c = el("span","chip"); c.appendChild(document.createTextNode(label+" ")); c.appendChild(el("b",null,sec(ms))); return c;
 }
+let lastSession = null;
 let lastTurnKey = null;
 function getTurn(ev){
   const key = (ev.session!=null?ev.session:"s")+"#"+(ev.turn!=null?ev.turn:"0");
@@ -414,7 +372,7 @@ function getTurn(ev){
   if(!t){ clearEmpty();
     const li = el("li","turn"); li.appendChild(el("div","turnH","Turn "+(ev.turn!=null?ev.turn:"?"))); feed.appendChild(li);
     t = {li, tools:0}; turns.set(key,t); }
-  lastTurnKey = key; lastSession = ev.session!=null?ev.session:"s"; $("ltTurn").textContent = "· turn "+(ev.turn!=null?ev.turn:"?");
+  lastTurnKey = key; lastSession = ev.session!=null?ev.session:"s";
   return t;
 }
 function addRow(t, node){ t.li.appendChild(node); toBottom(); }
@@ -431,14 +389,13 @@ function ingest(ev){
   switch(ev.type){
     case "state": setHeroState(ev.state); if(ev.state!=="tool") toolName=""; paintHero(); break;
     case "user": {
-      const t = getTurn(ev), chips=[]; if(typeof ev.asr_ms==="number"){ chips.push(chip("ASR final",ev.asr_ms,"asr")); setTile("asr",ev.asr_ms); }
+      const t = getTurn(ev), chips=[]; if(typeof ev.asr_ms==="number"){ chips.push(chip("ASR final",ev.asr_ms,"asr")); }
       addRow(t, msg("user","You",String(ev.text||""),chips)); break; }
     case "agent": {
       const t = getTurn(ev), chips=[];
-      if(typeof ev.llm_ms==="number"){ chips.push(chip("LLM first token",ev.llm_ms,"llm")); setTile("llm",ev.llm_ms); }
-      if(typeof ev.tts_ms==="number"){ chips.push(chip("TTS first audio",ev.tts_ms,"tts")); setTile("tts",ev.tts_ms); }
-      if(typeof ev.e2e_ms==="number"){ chips.push(chip("End-to-end",ev.e2e_ms,"e2e")); setTile("e2e",ev.e2e_ms);
-        const st = sessStats(lastSession); (t.tools>0?st.tool:st.plain).push(ev.e2e_ms); paintSess();
+      if(typeof ev.llm_ms==="number"){ chips.push(chip("LLM first token",ev.llm_ms,"llm")); }
+      if(typeof ev.tts_ms==="number"){ chips.push(chip("TTS first audio",ev.tts_ms,"tts")); }
+      if(typeof ev.e2e_ms==="number"){ chips.push(chip("End-to-end",ev.e2e_ms,"e2e"));
         if(t.tools>0){ const c=el("span","chip","tools on"); c.title="This turn called a tool, so it is slower than the tools-off benchmark"; chips.push(c); } }
       addRow(t, msg("agent","Kuya Jukebox",String(ev.text||""),chips)); break; }
     case "tool": {
