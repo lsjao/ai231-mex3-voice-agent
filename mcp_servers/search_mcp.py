@@ -21,6 +21,7 @@ PORT = int(os.environ.get("SEARCH_MCP_PORT", "8104"))
 TZ_NAME = os.environ.get("TZ_NAME", "Asia/Manila")
 SMALL_MODEL = os.environ.get("EXTRACT_MODEL", "google/gemini-2.5-flash-lite")   # rewriter, reranker and reader
 MAX_RETRIES = int(os.environ.get("SEARCH_RETRIES", "1"))
+FIRST_DEPTH = os.environ.get("SEARCH_DEPTH_FIRST", "fast")   # measured on the Pi: fast ~1.5 s, basic ~4.4 s, advanced ~7 s
 BUDGET_S = float(os.environ.get("SEARCH_BUDGET_S", "9"))   # do not start another attempt after this many seconds
 # Generic quality filter: short-video and social pages carry hashtags, not facts.
 BAD_DOMAINS = ("tiktok.com", "youtube.com", "facebook.com", "instagram.com", "pinterest.com", "x.com", "twitter.com")
@@ -281,9 +282,9 @@ async def web_search(query: str) -> str:
         if attempt and asyncio.get_event_loop().time() - started > BUDGET_S:
             break
         queries, news = await rewrite(query, now, hint)
-        cands = await gather(key, queries, news, "basic" if attempt == 0 else "advanced")
+        cands = await gather(key, queries, news, FIRST_DEPTH if attempt == 0 else "basic")   # fast first (~1.5 s), deeper only if needed
         if not cands and news:                      # nothing recent: retry without the news filter
-            cands = await gather(key, queries, False, "basic")
+            cands = await gather(key, queries, False, FIRST_DEPTH)
         if not cands:
             hint, note = "nothing at all", f"attempt {attempt}: no pages for {queries}"
             continue
