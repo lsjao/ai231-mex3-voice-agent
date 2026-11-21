@@ -220,7 +220,7 @@ RERANK_PROMPT = ("Pick the pages most likely to contain the answer to the questi
 
 async def rerank(query: str, now: datetime.datetime, cands: list[dict]) -> list[dict]:
     cands = cands[:8]
-    if len(cands) <= 3 or os.environ.get("SEARCH_RERANK", "0") != "1":   # off by default: costs ~1 s, value not measured
+    if len(cands) <= 3 or os.environ.get("SEARCH_RERANK", "1") != "1":   # on: with fast depth it picks the better of ~10 pages for ~0.5 s
         return cands[:3]
     listing = NL.join(f"{i + 1}. {host_of(c['url'])} | {(c.get('published_date') or 'no date')[:16]} | "
                       f"{clean(c.get('title', ''))[:90]} | {clean(c.get('content', ''))[:160]}" for i, c in enumerate(cands))
