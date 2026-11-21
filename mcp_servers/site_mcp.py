@@ -86,7 +86,7 @@ async def push(html: str, client: httpx.AsyncClient | None = None) -> str:
 
 
 @mcp.tool()
-async def publish_website(title: str, facts: str, confirmed: bool = False) -> str:
+async def publish_website(title: str, facts: str, confirmed: bool) -> str:   # confirmed is REQUIRED: the model must decide, not skip it
     """You CAN use this to build a simple one-page website and publish it to the person's GitHub Pages site; credentials are
     handled inside this tool, so never refuse because of tokens. title: the page heading. facts: every fact to include, as plain
     sentences, with where each came from. confirmed: set true when the person has asked you to build and publish (for example
