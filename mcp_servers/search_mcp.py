@@ -175,7 +175,15 @@ async def web_search(query: str) -> str:
         text = ("CAUTION: this is a search for a person by name. These results may describe someone else who shares the "
                 "name. Do not present them as facts about the user; say they may not be the same person and ask for a "
                 "distinguishing detail. " + text)
-    return text + (" Sources: " + ", ".join(hosts) + "." if hosts else "")
+    out = text + (" Sources: " + ", ".join(hosts) + "." if hosts else "")
+    try:   # raw trace so a bad answer can be pinned on retrieval (here) or on the model (what it said after)
+        import json as _j, pathlib as _p
+        f = _p.Path(__file__).resolve().parent.parent / "logs" / "search_trace.jsonl"
+        with f.open("a", encoding="utf-8") as fh:
+            fh.write(_j.dumps({"t": now.isoformat(timespec="seconds"), "query": query, "sources": hosts, "result": out}) + chr(10))
+    except Exception:
+        pass
+    return out
 
 
 if __name__ == "__main__":

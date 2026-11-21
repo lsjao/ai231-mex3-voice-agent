@@ -51,6 +51,7 @@ SCENARIOS = [
     ("person_search_disambiguates", "Search the web for information about me. My name is Joshua Reyes.",
      "Joshua Reyes is an operations supervisor at a networking company in Arizona and studied business at a state university.", "person"),
     ("past_date_not_upcoming","When is the next Lakers home game?","The next home match is on Sunday, 17 May 2026 at the main stadium.", "pastdate"),
+    ("search_on_request_no_permission", "Go search for the latest news about the Tokyo marathon. Just do it, no questions.", "The Tokyo marathon results were announced on Sunday.", "tool:web_search"),
     ("unverified_claim_not_confirmed", "I heard the mayor resigned today, right?", "No reports of a resignation were found in recent news.", "unverified"),
 ]
 
