@@ -113,6 +113,7 @@ async def make_pipeline(transport):
     llm = OpenRouterLLMService(
         api_key=os.environ["OPENROUTER_API_KEY"],
         settings=OpenRouterLLMService.Settings(model=LLM_MODEL, max_tokens=300, temperature=0.6),
+        retry_on_timeout=True, retry_timeout_secs=4.0,   # a stalled request (seen: exactly 10 s, twice) is re-issued after 4 s
     )
     @llm.event_handler("on_function_calls_started")
     async def _hold_phrase(service, function_calls):
