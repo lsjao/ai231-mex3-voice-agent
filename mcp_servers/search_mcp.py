@@ -93,6 +93,33 @@ STOP = {"the", "and", "for", "what", "when", "who", "how", "are", "is", "was", "
 TZ_NAME = os.environ.get("TZ_NAME", "Asia/Manila")
 
 
+ZONES = {"ET": "America/New_York", "EST": "America/New_York", "EDT": "America/New_York", "CT": "America/Chicago",
+         "CST": "America/Chicago", "CDT": "America/Chicago", "MT": "America/Denver", "MST": "America/Denver",
+         "MDT": "America/Denver", "PT": "America/Los_Angeles", "PST": "America/Los_Angeles", "PDT": "America/Los_Angeles",
+         "UTC": "UTC", "GMT": "UTC", "BST": "Europe/London"}
+TIME_RX = re.compile(r"(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?\s*(ET|EST|EDT|CT|CST|CDT|MT|MST|MDT|PT|PST|PDT|UTC|GMT|BST)", re.I)
+
+
+def annotate_times(text: str, user_tz: str = "Asia/Manila") -> str:
+    """Small models are poor at time-zone arithmetic, so do it in code: append the UTC and the user's local time after any
+    time written with a zone abbreviation, e.g. '7:30 a.m. ET' -> '7:30 a.m. ET (= 12:30 UTC / 8:30 PM Manila)'."""
+    from zoneinfo import ZoneInfo
+    today = datetime.datetime.now(ZoneInfo(user_tz)).date()
+
+    def conv(m):
+        h, mi, ap, z = int(m.group(1)), int(m.group(2) or 0), m.group(3).lower(), m.group(4).upper()
+        if not 1 <= h <= 12:
+            return m.group(0)
+        h = h % 12 + (12 if ap == "p" else 0)
+        src = datetime.datetime(today.year, today.month, today.day, h, mi, tzinfo=ZoneInfo(ZONES[z]))
+        utc = src.astimezone(ZoneInfo("UTC"))
+        loc = src.astimezone(ZoneInfo(user_tz))
+        city = user_tz.split("/")[-1].replace("_", " ")
+        return f"{m.group(0)} (= {utc:%H:%M} UTC / {loc:%I:%M %p}".replace("(= 0", "(= ") + f" {city})"
+
+    return TIME_RX.sub(conv, text)
+
+
 def best_chunks(text: str, query: str, today: datetime.date, k: int = 3, size: int = 420) -> list[str]:
     """Pick the passages of a page that best match the question AND today's date (generic retrieval, no topic rules)."""
     words = {w for w in re.findall(r"[a-z0-9']+", query.lower()) if len(w) > 2} - STOP
@@ -142,8 +169,8 @@ async def web_search(query: str) -> str:
         return "I found nothing useful for that search."
     header = (f"Now: {now:%A %d %B %Y, %I:%M %p} {TZ_NAME}. Times in the sources are as written by each source; "
               f"state which time zone you mean. ")
-    text = header + (clean(d["answer"]) + " " if d.get("answer") else "") + " ".join(evidence)
-    text = tag_past_dates(text)[:1900]
+    text = header + (" ".join(evidence) if evidence else clean(d.get("answer", "")))   # the provider's own summary is unverified: page text only
+    text = annotate_times(tag_past_dates(text))[:1900]
     if looks_like_person(query):
         text = ("CAUTION: this is a search for a person by name. These results may describe someone else who shares the "
                 "name. Do not present them as facts about the user; say they may not be the same person and ask for a "
