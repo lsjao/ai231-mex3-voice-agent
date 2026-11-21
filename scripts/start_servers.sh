@@ -23,6 +23,7 @@ start tts tts_mcp 8102
 start weather weather_mcp 8103
 start search search_mcp 8104
 start music music_mcp 8105
+start site site_mcp 8109
 start_any events 8106 .venv/bin/python scripts/events_server.py
 if [ -d "$HOME/mex3/docs/visual" ]; then
   start_any visual 8107 python3 -m http.server 8107 --directory "$HOME/mex3/docs/visual"
@@ -30,6 +31,6 @@ else
   echo "visual: docs/visual not on the Pi yet (git pull in ~/mex3)"
 fi
 sleep 4
-ss -ltn | grep -E ":810[1-7] " | awk '{print "listening:", $4}' | sort
+ss -ltn | grep -E ":810[1-9] " | awk '{print "listening:", $4}' | sort
 # Warm the tool servers' outbound connections in the background (first call is otherwise ~2.5 s slower).
 ( sleep 3; .venv/bin/python bench/warm_tools.py >> logs/warm.log 2>&1 ) &
