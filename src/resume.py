@@ -21,7 +21,7 @@ from pipecat.observers.base_observer import BaseObserver, FramePushed
 
 from src import events
 
-SLOW_TOOLS = {"web_search": "Searching the web", "read_page": "Reading a page", "publish_website": "Building your page"}
+SLOW_TOOLS = {"web_search": "Searching the web", "read_page": "Reading a page", "publish_website": "Building your page", "create_public_repo": "Creating your repository"}
 IDLE_SECS = 1.5          # the conversation must be quiet this long before an interrupted request is resumed
 PROGRESS_SECS = 3.0      # heartbeat for the visual while a slow tool runs
 RESUME_PROMPT = ('[automatic note] You were interrupted while working on this earlier request: "{req}". That work was cancelled '
