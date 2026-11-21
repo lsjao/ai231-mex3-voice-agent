@@ -11,6 +11,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from loguru import logger
 
+from pipecat.adapters.llm.schemas.direct_function import tool_options
 from pipecat.adapters.llm.schemas.tools_schema import ToolsSchema
 from pipecat.frames.frames import TTSSpeakFrame
 from pipecat.audio.vad.silero import SileroVADAnalyzer
@@ -57,6 +58,38 @@ TASK_SERVERS = {
 }
 
 
+# Tools named here run in the background: an interruption does NOT cancel them, the conversation carries on, and the
+# result is spoken as soon as it arrives. Off by default; set ASYNC_TOOLS=web_search,read_page,publish_website to enable.
+ASYNC_TOOLS = {n.strip() for n in os.environ.get("ASYNC_TOOLS", "").split(",") if n.strip()}
+
+
+def _async_handler(handler):
+    @tool_options(cancel_on_interruption=False)
+    async def run(params):
+        return await handler(params)
+    return run
+
+
+async def load_task_tools():
+    """Connect to our task MCP servers and return (clients, tools). Tools listed in ASYNC_TOOLS become background tools."""
+    clients, tools = [], None
+    for name, (url, allow) in TASK_SERVERS.items():
+        try:
+            c = MCPClient(StreamableHttpParameters(url=url), tools_filter=allow)
+            await c.start()
+            t = await c.tools()
+            for fs in t.standard_tools:
+                if fs.name in ASYNC_TOOLS and getattr(fs, "handler", None):
+                    fs.handler = _async_handler(fs.handler)
+            clients.append(c)
+            tools = t if tools is None else ToolsSchema(standard_tools=tools.standard_tools + t.standard_tools)
+            logger.info(f"tools from {name}: {[f.name for f in t.standard_tools]}"
+                        + (f" (background: {sorted(ASYNC_TOOLS & {f.name for f in t.standard_tools})})" if ASYNC_TOOLS else ""))
+        except Exception as e:
+            logger.warning(f"{name} unavailable, continuing without it: {e}")
+    return clients, tools
+
+
 def load_prompt(version: str | None = None) -> str:
     """The versioned prompt file with today's date filled in (the model cannot know the date by itself).
     v4+ carries a {{today}} placeholder in its <context> block; v1-v3 get the date appended, as they did originally."""
@@ -98,18 +131,7 @@ async def make_pipeline(transport):
             pass
     asyncio.create_task(_warm_llm())
 
-    clients, tools = [], None
-    if not BENCH:
-        for name, (url, allow) in TASK_SERVERS.items():
-            try:
-                c = MCPClient(StreamableHttpParameters(url=url), tools_filter=allow)
-                await c.start()
-                t = await c.tools()
-                clients.append(c)
-                tools = t if tools is None else ToolsSchema(standard_tools=tools.standard_tools + t.standard_tools)
-                logger.info(f"tools from {name}: {[f.name for f in t.standard_tools]}")
-            except Exception as e:
-                logger.warning(f"{name} unavailable, continuing without it: {e}")
+    clients, tools = ([], None) if BENCH else await load_task_tools()
     extra = {"tools": tools} if tools is not None else {}  # BENCH mode: no tools (tools=None is invalid)
     context = LLMContext(messages=[{"role": "system", "content": load_prompt()}], **extra)
     pair = LLMContextAggregatorPair(
