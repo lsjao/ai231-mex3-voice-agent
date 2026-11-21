@@ -37,6 +37,19 @@ async def cors(request, handler):
     return resp
 
 
+def agent_running() -> bool:
+    """True while the voice agent process (python -m src.agent) is alive on this Pi. A quiet agent writes no events, so
+    file age alone cannot tell 'idle but running' from 'stopped'."""
+    for p in Path("/proc").glob("[0-9]*/cmdline"):
+        try:
+            c = p.read_bytes().replace(b"\x00", b" ")
+        except OSError:
+            continue
+        if b"-m src.agent" in c and b"events_server" not in c and b"bash -c" not in c:
+            return True
+    return False
+
+
 def session_files() -> list[Path]:
     return sorted(DIR.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True) if DIR.exists() else []
 
@@ -58,13 +71,15 @@ async def health(_):
 async def sessions(_):
     rows = []
     now = time.time()
-    for p in session_files():
+    files = session_files()
+    running = agent_running()
+    for p in files:
         ev = read_events(p)
         if not ev:
             continue
         users = [e for e in ev if e["type"] == "user"]
         rows.append({"id": p.stem, "started": ev[0].get("wall"), "events": len(ev), "turns": len(users),
-                     "duration_s": round(ev[-1]["t"] - ev[0]["t"], 1), "live": now - p.stat().st_mtime < LIVE_WINDOW_S})
+                     "duration_s": round(ev[-1]["t"] - ev[0]["t"], 1), "live": now - p.stat().st_mtime < LIVE_WINDOW_S or (running and p == files[0])})
     return web.json_response(rows)
 
 
@@ -91,7 +106,7 @@ async def events(request):
             if newest is not None and newest != current:
                 current = newest
                 # Backlog only if this session is live now; an old finished session is not "live".
-                live = time.time() - newest.stat().st_mtime < LIVE_WINDOW_S
+                live = time.time() - newest.stat().st_mtime < LIVE_WINDOW_S or agent_running()
                 offset = 0 if live else newest.stat().st_size
             if current is not None and current.exists():
                 size = current.stat().st_size
