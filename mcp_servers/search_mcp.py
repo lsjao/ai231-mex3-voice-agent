@@ -219,8 +219,8 @@ RERANK_PROMPT = ("Pick the pages most likely to contain the answer to the questi
 
 async def rerank(query: str, now: datetime.datetime, cands: list[dict]) -> list[dict]:
     cands = cands[:8]
-    if len(cands) <= 3:
-        return cands
+    if len(cands) <= 3 or os.environ.get("SEARCH_RERANK", "0") != "1":   # off by default: costs ~1 s, value not measured
+        return cands[:3]
     listing = NL.join(f"{i + 1}. {host_of(c['url'])} | {(c.get('published_date') or 'no date')[:16]} | "
                       f"{clean(c.get('title', ''))[:90]} | {clean(c.get('content', ''))[:160]}" for i, c in enumerate(cands))
     raw = await small(RERANK_PROMPT, f"Current date: {now:%d %B %Y}.{NL}Question: {query}{NL}{listing}", 40)
@@ -240,8 +240,11 @@ READ_PROMPT = (
     "Give the specific facts asked for (names, numbers, times, results) and say which source and date they come from. "
     "Always state the time zone of any time; use the conversions written in brackets when present, and if the question asks "
     "for a different zone than the page uses, say what zone the page uses, and never state how zones relate to each other unless a page says so. Prefer the most recent information, and notice "
-    "dates that are already past compared with the current date. If the pages do not contain the asked-for fact, reply "
-    "starting with NOT FOUND and say briefly what the pages do contain.")
+    "dates that are already past compared with the current date. Answer exactly what was asked: if a page is about a "
+    "different event, year, measure or moment than the question (for example a different year's schedule, or odds for a "
+    "different outcome), do not use it, or say how it differs. If a source gives no date, say its date is unknown. When "
+    "sources disagree on a number, give the one with the newest as-of date and say the others differ. If the pages do not "
+    "contain the asked-for fact, reply starting with NOT FOUND and say briefly what the pages do contain.")
 
 
 def passages(item: dict, query: str, today: datetime.date) -> str:
