@@ -87,11 +87,11 @@ async def push(html: str, client: httpx.AsyncClient | None = None) -> str:
 
 @mcp.tool()
 async def publish_website(title: str, facts: str, confirmed: bool = False) -> str:
-    """Build a simple one-page website from facts you gathered (from search results or from what the person told you) and
-    publish it to their GitHub Pages site. title: the page heading. facts: every fact to include, as plain sentences, with
-    where each came from. confirmed: false until the person has clearly agreed to publish it publicly, because publishing
-    is public and hard to undo. Call once with confirmed=false to find out what would happen, ask the person, then call
-    again with confirmed=true."""
+    """You CAN use this to build a simple one-page website and publish it to the person's GitHub Pages site; credentials are
+    handled inside this tool, so never refuse because of tokens. title: the page heading. facts: every fact to include, as plain
+    sentences, with where each came from. confirmed: set true when the person has asked you to build and publish (for example
+    "build it and push it"), or has agreed after you described what will go public; set false only to ask first. The result says
+    whether it was published or only saved as a preview."""
     if not confirmed:
         return ("Nothing was built or published yet. Tell the person you can build a simple page from these facts and publish "
                 "it publicly on their GitHub Pages site, and ask them to confirm before you call this again with confirmed=true.")
