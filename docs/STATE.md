@@ -101,7 +101,7 @@ The NBA/league scoreboard server (:8108) was a domain-specific overreach and was
 ## Barge-in tail experiment (Sat ~11:55, silent fdbench run on the Pi, run 2026-11-21_11-37-44, local fd-benchmark/runs/kuya-vadtest)
 Cause of the 1.31 s outlier in the 05:00 run: the agent stopped 0.02 s after it DETECTED the interruption, but detection was ~0.8 s late because the cut-in clip starts softly and VAD confidence 0.8 waited.
 Tried VAD_CONFIDENCE 0.65 + VAD_START_SECS 0.25 (env vars, same seed/clips): barge-in t_stop 0.48 / 0.51 / 0.51 / 0.57 s (n=4; 2 trials were already silent), max 1.31 -> 0.57 s; mean ~0.52 s (best case got slower: 0.32 -> 0.48 s on one clip).
-False-trigger trials (side talk, TV/radio, background) unchanged: 6 of 7 took the turn in BOTH runs (the distractors are speech-like), so the benchmark cannot show room-noise/music/echo risk.
+False-trigger trials (side talk, TV/radio, background) unchanged: 5 of 6 took the turn in BOTH runs (the distractors are speech-like), so the benchmark cannot show room-noise/music/echo risk.
 DECISION: not adopted (defaults stay 0.8 / 0.35) because the demo plays music in an open room with the speaker loud and the risk is unmeasured. To adopt: set VAD_CONFIDENCE/VAD_START_SECS in ~/mex3/.env, run echo_check.sh and a music-on test in the venue first.
 Other changes today: search hedging (fast + deep in parallel), read_page tool, site-mcp (publish_website, DEMO_GITHUB gate), mic muted only during the holding phrase (src/mute.py), tool events de-duplicated by call id, prompt v10 (place/time-zone context), speaker level 90 %, ASR keyterm Lacuata.
 
