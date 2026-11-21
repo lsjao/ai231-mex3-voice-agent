@@ -52,7 +52,6 @@ for _t in ("music_play", "music_pause", "music_resume", "music_stop", "music_nex
 TASK_SERVERS = {
     "weather-mcp": ("http://127.0.0.1:8103/mcp", None),
     "search-mcp": ("http://127.0.0.1:8104/mcp", None),
-    "sports-mcp": ("http://127.0.0.1:8108/mcp", None),
     "music-mcp": ("http://127.0.0.1:8105/mcp", ["music_play", "music_pause", "music_resume", "music_stop", "music_next",
                                                   "music_previous", "music_volume", "music_status"]),
 }
@@ -70,6 +69,10 @@ def load_prompt(version: str | None = None) -> str:
     return (base + f"\n\nToday is {now:%A, %d %B %Y}; the current year is {now.year}. Never state the date or year "
             f"from memory. For anything recent or time-sensitive (latest, now, this year, current office holders, "
             f"scores, results), call web_search first and answer from its result.")
+
+
+if os.environ.get("SPORTS_TOOL") == "1":   # optional specialised tool; OFF by default so generic search is what gets exercised
+    TASK_SERVERS["sports-mcp"] = ("http://127.0.0.1:8108/mcp", None)
 
 
 async def make_pipeline(transport):

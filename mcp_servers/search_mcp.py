@@ -31,11 +31,13 @@ SCHEDULE = ("next game", "next match", "upcoming", "schedule", "fixture", "tomor
             "next concert", "next race")
 
 
-async def _search(key: str, query: str, topic: str, time_range: str | None, deep: bool = False) -> dict:
+async def _search(key: str, query: str, topic: str, time_range: str | None, deep: bool = False, raw: bool = False) -> dict:
     # Time-sensitive questions get the slower, more relevant 'basic' depth and 3 results (correctness over speed);
     # everything else stays on 'fast'.
     body = {"query": query, "max_results": 3 if deep else 2, "include_answer": True, "topic": topic,
             "search_depth": os.environ.get("SEARCH_DEPTH_NEWS", "basic") if deep else os.environ.get("SEARCH_DEPTH", "fast")}
+    if raw:
+        body["include_raw_content"] = True          # the page text itself, not just a snippet
     if time_range:
         body["time_range"] = time_range
     r = await _client.post("https://api.tavily.com/search", headers={"Authorization": f"Bearer {key}"}, json=body)
@@ -86,49 +88,67 @@ def looks_like_person(query: str) -> bool:
     return bool(PERSON_RX.match(q)) or bool(re.search(r"\b(about me|about myself|who am i)\b", q, re.I))
 
 
+STOP = {"the", "and", "for", "what", "when", "who", "how", "are", "is", "was", "next", "latest", "current", "this", "that",
+        "with", "from", "about", "tell", "give", "please", "game", "games", "today", "now"}
+TZ_NAME = os.environ.get("TZ_NAME", "Asia/Manila")
+
+
+def best_chunks(text: str, query: str, today: datetime.date, k: int = 3, size: int = 420) -> list[str]:
+    """Pick the passages of a page that best match the question AND today's date (generic retrieval, no topic rules)."""
+    words = {w for w in re.findall(r"[a-z0-9']+", query.lower()) if len(w) > 2} - STOP
+    day_forms = {f"{today:%b} {today.day}".lower(), f"{today:%B} {today.day}".lower(), f"{today.day} {today:%B}".lower(),
+                 f"{today:%A}".lower()}
+    chunks = [text[i:i + size] for i in range(0, min(len(text), 14000), size - 80)]
+
+    def score(c: str) -> int:
+        cl = c.lower()
+        return sum(cl.count(w) for w in words) + 3 * sum(1 for d in day_forms if d in cl)
+
+    ranked = [c for c in sorted(chunks, key=score, reverse=True)[:k] if score(c) > 0]
+    return [clean(c) for c in ranked]
+
+
 @mcp.tool()
 async def web_search(query: str) -> str:
-    """Search the web for current information (news, facts, recent events). Always returns the MOST RECENT
-    information available; do not add a year to the query yourself. When searching for a person, results may be about
-    someone else who shares the name: do not present a name-only match as fact, say it may not be them, and confirm a
+    """Search the web for current information (news, schedules, results, facts). Reads the pages and returns the passages that
+    match the question and today's date, with the outlet names and a note of the current time and time zone. Always returns the
+    MOST RECENT information available; do not add a year to the query yourself. When searching for a person, results may be
+    about someone else who shares the name: do not present a name-only match as fact, say it may not be them, and confirm a
     distinguishing detail (school, city, handle) with the user."""
     key = os.environ.get("TAVILY_API_KEY")
     if not key:
         return "Search is not available because the search key is missing."
-    year = datetime.date.today().year
-    # Recency by default: put the current year in the query, use the news topic for time-sensitive questions, and
-    # only look at recent pages. If that finds nothing, fall back to an unrestricted search.
-    q = query if re.search(r"(19|20)\d{2}", query) else f"{query} {year}"
+    from zoneinfo import ZoneInfo
+    now = datetime.datetime.now(ZoneInfo(TZ_NAME))
+    q = query if re.search(r"(19|20)\d{2}", query) else f"{query} {now.year}"
     ql = query.lower()
     sched = any(w in ql for w in SCHEDULE)
     newsy = any(w in ql for w in NEWSY) and not sched
     if sched:
-        d = await _search(key, q, "general", None, deep=True)
+        d = await _search(key, q, "general", None, deep=True, raw=True)
     else:
-        d = await _search(key, q, "news" if newsy else "general", "month" if newsy else "year", deep=newsy)
+        d = await _search(key, q, "news" if newsy else "general", "month" if newsy else "year", deep=newsy, raw=True)
     if not d.get("results") and not d.get("answer"):
-        d = await _search(key, q, "general", None, deep=newsy)
-    parts = []
-    if d.get("answer"):
-        parts.append(clean(d["answer"]))
-    for item in d.get("results", [])[:2]:
-        title, snippet = clean(item.get("title", "")), clean(item.get("content", ""))[:100]
-        if title:
-            parts.append(f"{title}: {snippet}" if snippet else title)
-    text = tag_past_dates(" ".join(parts))[:560]
-    hosts = []
-    for item in d.get("results", [])[:3]:                  # name the outlets so the agent can say who reported it
-        h = re.sub(r"^www\.", "", re.sub(r"^https?://", "", item.get("url", "")).split("/")[0])
-        if h and h not in hosts:
-            hosts.append(h)
-    if text and hosts:
-        text += " Sources: " + ", ".join(hosts) + "."
-    if text and looks_like_person(query):
-        # In the RESULT itself, where the model cannot miss it: name-only matches are often a different person.
+        d = await _search(key, q, "general", None, deep=True, raw=True)
+    evidence, hosts = [], []
+    for item in d.get("results", [])[:3]:
+        host = re.sub(r"^www\.", "", re.sub(r"^https?://", "", item.get("url", "")).split("/")[0])
+        passages = best_chunks(item.get("raw_content") or "", query, now.date()) or [clean(item.get("content", ""))[:320]]
+        pub = f", published {item['published_date'][:16]}" if item.get("published_date") else ""
+        evidence.append(f"[{host}{pub}] " + " ... ".join(passages))
+        if host and host not in hosts:
+            hosts.append(host)
+    if not evidence and not d.get("answer"):
+        return "I found nothing useful for that search."
+    header = (f"Now: {now:%A %d %B %Y, %I:%M %p} {TZ_NAME}. Times in the sources are as written by each source; "
+              f"state which time zone you mean. ")
+    text = header + (clean(d["answer"]) + " " if d.get("answer") else "") + " ".join(evidence)
+    text = tag_past_dates(text)[:1900]
+    if looks_like_person(query):
         text = ("CAUTION: this is a search for a person by name. These results may describe someone else who shares the "
                 "name. Do not present them as facts about the user; say they may not be the same person and ask for a "
                 "distinguishing detail. " + text)
-    return text or "I found nothing useful for that search."
+    return text + (" Sources: " + ", ".join(hosts) + "." if hosts else "")
 
 
 if __name__ == "__main__":
