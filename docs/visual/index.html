@@ -29,7 +29,7 @@ button{cursor:pointer}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* ---------- header ---------- */
-header{display:flex;align-items:center;gap:.8rem;padding:.5rem .9rem;flex:0 0 auto}
+header{display:flex;align-items:center;gap:.8rem;padding:1.2rem 2rem .8rem;flex:0 0 auto}
 .brand{display:flex;flex-direction:column;line-height:1.05;margin-right:auto}
 .brand b{font-size:var(--t2);font-weight:700;color:var(--amber)}
 .brand span{font-size:var(--t-1);color:var(--muted)}
@@ -44,20 +44,15 @@ header{display:flex;align-items:center;gap:.8rem;padding:.5rem .9rem;flex:0 0 au
 .btn{background:var(--surface2);border:0;border-radius:.6rem;padding:.3rem .7rem;font-size:var(--t-1);font-weight:500}
 .btn:hover{background:#43212c}
 .btn[aria-pressed=true]{background:rgba(127,227,240,.18);color:var(--cyan)}
-.views{display:flex;gap:.3rem}
-.views [role=tab]{background:transparent;border:0;border-radius:.6rem;padding:.3rem .8rem;font-size:var(--t0);font-weight:700}
-.views [role=tab][aria-selected=true]{color:var(--amber);background:rgba(255,193,94,.16)}
-.views kbd{font:inherit;font-size:var(--t-1);color:var(--muted);margin-left:.35rem;font-weight:400}
-
-main{flex:1 1 0;min-height:0;padding:0 .9rem .8rem;display:flex}
-.view{flex:1 1 auto;min-width:0;min-height:0;display:grid;gap:.8rem}
+main{flex:1 1 0;min-height:0;padding:0 2rem 1.6rem;display:flex}
+.view{flex:1 1 auto;min-width:0;min-height:0;display:grid;gap:1.8rem}
 .card{background:none;border:0;padding:.7rem .85rem;min-height:0}
 .card h2{margin:0 0 .4rem;font-size:var(--t-1);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .src{font-size:var(--t-1);color:var(--muted);line-height:1.3;margin:.35rem 0 0}
 
 /* ---------- STAGE view: φ : 1 columns, jukebox about 0.618 of the height ---------- */
 #vStage{grid-template-columns:minmax(0,1.618fr) minmax(0,1fr)}
-.left{display:grid;grid-template-rows:minmax(0,2.6fr) minmax(0,1fr);gap:.8rem;min-height:0}
+.left{display:grid;grid-template-rows:minmax(0,2.6fr) minmax(0,1fr);gap:1.2rem;min-height:0}
 .heroCard{position:relative;display:flex;justify-content:center;padding:.3rem .6rem;overflow:hidden;background:radial-gradient(ellipse at 50% 55%,#33111a 0%,rgba(36,16,22,0) 72%)}
 :root.hc .heroCard{background:none}
 .hero{position:relative;height:100%;min-height:0;display:flex;justify-content:center;width:100%}
@@ -97,11 +92,6 @@ main{flex:1 1 0;min-height:0;padding:0 .9rem .8rem;display:flex}
 .chatCard{display:flex;flex-direction:column;padding:.4rem 1rem .8rem}
 .chatHead{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.8rem}
 .chatHead h2{margin:0}
-.replayBar{display:none;align-items:center;gap:.4rem;flex-wrap:wrap;background:rgba(127,227,240,.14);border-radius:.7rem;padding:.4rem .7rem;margin-bottom:.7rem;font-size:var(--t-1);color:var(--cyan)}
-.replayBar b{font-weight:700}
-.replayBar .btn{padding:.1rem .45rem}
-.replayBar progress{flex:1 1 5rem;height:.4rem;accent-color:var(--cyan)}
-.chatCard.isReplay .replayBar{display:flex}
 #feed{list-style:none;margin:0;padding:0 .4rem 0 0;flex:1 1 0;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:1rem;scrollbar-color:#4a2530 transparent}
 .turn{display:flex;flex-direction:column;gap:.45rem}
 .turnH{align-self:center;font-size:var(--t-2);color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
@@ -126,55 +116,6 @@ main{flex:1 1 0;min-height:0;padding:0 .9rem .8rem;display:flex}
 .empty{margin:auto;text-align:center;color:var(--muted);max-width:22rem;padding:1rem}
 .empty b{display:block;font-size:var(--t1);color:var(--text);margin-bottom:.4rem;font-weight:500}
 .empty span{font-size:var(--t-1);line-height:1.5}
-.menu{position:absolute;right:.9rem;top:3.4rem;z-index:5;width:24rem;max-width:92vw;background:#2e141c;border:0;border-radius:.9rem;padding:.7rem;display:none;flex-direction:column;gap:.45rem;font-size:var(--t0);box-shadow:0 1rem 3rem #000a}
-.menu.open{display:flex}
-.menu .msg2{color:var(--muted);font-size:var(--t-1);line-height:1.35}
-.menu .btn{text-align:left;font-size:var(--t0)}
-.menu ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.3rem;max-height:12rem;overflow:auto}
-
-/* ---------- NUMBERS view ---------- */
-#vNum{grid-template-columns:minmax(0,1.618fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
-.benchCard{display:flex;flex-direction:column}
-.brows{flex:1 1 auto;display:flex;flex-direction:column;justify-content:space-between;gap:.2rem;min-height:0}
-.brow{display:grid;grid-template-columns:9.5rem minmax(0,1fr) 6.6rem 5.6rem;align-items:center;gap:.7rem;border-top:1px solid var(--line);padding-top:.2rem;flex:1 1 0;min-height:0}
-.brow:first-child{border-top:0}
-.brow .nm{font-size:var(--t1);font-weight:700;line-height:1.1}
-.brow .nm small{display:block;font-size:var(--t-1);font-weight:400;color:var(--muted)}
-.track{position:relative;height:1.1rem;border-radius:.55rem;background:var(--surface2)}
-.track i{position:absolute;left:0;top:0;bottom:0;border-radius:.55rem}
-.track s{position:absolute;top:-.3rem;bottom:-.3rem;width:3px;background:var(--text);text-decoration:none}
-.track u{position:absolute;top:-.1rem;bottom:-.1rem;width:2px;background:var(--text);opacity:.55;text-decoration:none}
-.brow.ok .track i{background:var(--good)} .brow.miss .track i{background:var(--miss)}
-.brow .val{font-size:var(--t3);font-weight:700;line-height:1;text-align:right;white-space:nowrap}
-.brow.ok .val{color:var(--good)} .brow.miss .val{color:var(--miss)}
-.brow .val small{display:block;font-size:var(--t-1);font-weight:400;color:var(--muted);margin-top:.1rem}
-.badge{display:inline-flex;align-items:center;gap:.25rem;font-weight:700;font-size:var(--t0);border-radius:.5rem;padding:.15rem .5rem;white-space:nowrap}
-.badge.ok{color:var(--good);background:rgba(141,232,184,.14)}
-.badge.miss{color:var(--miss);background:rgba(255,155,138,.14)}
-.tgt{display:block;font-size:var(--t-1);color:var(--muted);margin-top:.1rem}
-.legend{font-size:var(--t-1);color:var(--muted);margin:.3rem 0 0}
-
-.robCard{display:flex;flex-direction:column}
-.rbars{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;gap:.9rem;min-height:0}
-.rb .top{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;font-size:var(--t0)}
-.rb .top b{font-size:var(--t3);line-height:1}
-.rb.ok b{color:var(--good)} .rb.miss b{color:var(--miss)}
-.rb .track{height:1.5rem;margin-top:.2rem}
-.rb.ok .track i{background:var(--good)} .rb.miss .track i{background:var(--miss)}
-.thr{font-size:var(--t-1);color:var(--muted);position:relative;height:1.1rem}
-.thr span{position:absolute;transform:translateX(-50%);white-space:nowrap}
-.big0{display:flex;align-items:center;gap:.7rem;border-top:1px solid var(--line);padding-top:.4rem;margin-top:.4rem}
-.big0 b{font-size:var(--t5);color:var(--good);line-height:.95}
-.big0 span{font-size:var(--t0);line-height:1.25}
-
-.strip{grid-column:1 / -1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.618fr);gap:.8rem}
-.ba .nm{font-size:var(--t-1);color:var(--muted);line-height:1.2}
-.ba .x{font-size:var(--t2);font-weight:700;white-space:nowrap;line-height:1.2;margin:.1rem 0}
-.ba .x i{font-style:normal;color:var(--miss)} .ba .x u{text-decoration:none;color:var(--good)} .ba .x em{font-style:normal;color:var(--muted);padding:0 .25rem}
-.ba .why{font-size:var(--t-1);color:var(--muted);line-height:1.2}
-.plain{font-size:var(--t-1);line-height:1.35;margin:0;padding-left:1rem}
-.plain li{margin:.15rem 0}
-
 /* ---------- hero svg paint ---------- */
 .tube-out{fill:none;stroke:url(#gOut);stroke-width:26}
 .tube-in{fill:none;stroke:#ffc15e;stroke-width:18}
@@ -248,31 +189,16 @@ main{flex:1 1 0;min-height:0;padding:0 .9rem .8rem;display:flex}
 <body>
 <header>
   <div class="brand"><b>Kuya Jukebox</b><span>full-duplex voice agent · Raspberry Pi 4</span></div>
-  <div class="views" role="tablist" aria-label="View">
-    <button role="tab" id="tabStage" aria-selected="true" aria-controls="vStage">Stage<kbd>1</kbd></button>
-    <button role="tab" id="tabNum" aria-selected="false" aria-controls="vNum" tabindex="-1">Numbers<kbd>2</kbd></button>
-  </div>
   <span class="pill" id="pill" data-k="waiting" role="status" aria-live="polite"><i></i><span id="pillText">WAITING</span></span>
   <label class="hostbox">Pi host <input id="host" spellcheck="false" aria-label="Pi host and port" autocomplete="off"></label>
-  <button class="btn" id="btnReplay" aria-haspopup="true" aria-expanded="false">Replay…</button>
   <button class="btn" id="btnPreview" aria-pressed="false" title="Show hero state animations only (no chat content)">Animation preview</button>
   <button class="btn" id="btnHC" aria-pressed="false">High contrast</button>
   <button class="btn" id="btnMotion" aria-pressed="false" title="Follows your system setting by default">Reduce motion</button>
 </header>
 
-<div class="menu" id="menu" role="dialog" aria-label="Replay a recorded session">
-  <div class="msg2">Replay shows a <b>real recorded session</b> only, clearly labelled. It is never mixed into the live view.</div>
-  <button class="btn" id="mFile">Open sample_session.json (next to this page)</button>
-  <button class="btn" id="mPick">Choose a recorded session file…</button>
-  <button class="btn" id="mPi">List recorded sessions on the Pi</button>
-  <ul id="mList"></ul>
-  <div class="msg2" id="mMsg" role="status"></div>
-  <input type="file" id="filePick" accept=".json,application/json" class="sr" tabindex="-1" aria-label="Recorded session file">
-</div>
-
 <main>
   <!-- =================== STAGE =================== -->
-  <div class="view" id="vStage" role="tabpanel" aria-labelledby="tabStage">
+  <div class="view" id="vStage">
     <section class="left" aria-label="Agent state and latency">
       <div class="card heroCard">
         <div class="hero-badge" id="prevBadge" hidden>Animation preview · no real data</div>
@@ -361,31 +287,10 @@ main{flex:1 1 0;min-height:0;padding:0 .9rem .8rem;display:flex}
 
     <section class="card chatCard" id="chatCard" aria-label="Conversation">
       <div class="chatHead"><h2 id="chatTitle">Live conversation</h2><span class="pill" id="chatSrc" data-k="waiting" style="font-size:var(--t-2);padding:.05rem .6rem">…</span></div>
-      <div class="replayBar" id="replayBar">
-        <b id="replayLabel">REPLAY</b>
-        <button class="btn" id="rpPlay">Pause</button><button class="btn" id="rpRestart">Restart</button><button class="btn" id="rpSpeed">1×</button><button class="btn" id="rpExit">Back to live</button>
-        <progress id="rpProg" value="0" max="1" aria-label="Replay progress"></progress>
-      </div>
       <ol id="feed" role="log" aria-live="polite" aria-label="Conversation events"></ol>
     </section>
   </div>
 
-  <!-- =================== NUMBERS =================== -->
-  <div class="view" id="vNum" role="tabpanel" aria-labelledby="tabNum" hidden>
-    <section class="card benchCard" aria-label="Benchmark versus targets">
-      <h2>Benchmark vs targets</h2>
-      <div class="brows" id="brows"></div>
-      <p class="legend" id="benchLegend"></p>
-      <p class="src" id="benchSrc"></p>
-    </section>
-    <section class="card robCard" aria-label="Robustness">
-      <h2>Robustness: can the agent hear itself?</h2>
-      <div class="rbars" id="rbars"></div>
-      <div class="big0"><b>0</b><span id="phantom"></span></div>
-      <p class="src" id="robSrc"></p>
-    </section>
-    <div class="strip" id="strip"></div>
-  </div>
 </main>
 
 <script>
@@ -394,46 +299,6 @@ main{flex:1 1 0;min-height:0;padding:0 .9rem .8rem;display:flex}
    DATA. Every number below comes from a real run; the source is shown on screen.
    Benchmark: fd-benchmark/runs/kuya-jukebox/2026-11-21_04-16-23/summary.md (tools OFF, class convention).
    ===================================================================== */
-const BENCH = {
-  source: "Class benchmark (fdbench), tools OFF · run 2026-11-21_04-16-23 · 10 phrases × 3 runs (n=30; barge-in n=2) · E2E counted from VAD end.",
-  note: "Earlier run (02:24): barge-in 0.59 s (n=2), WER 4.2 %.",
-  rows: [
-    {k:"e2e",  name:"End-to-end",       sub:"speech end → audio out", target:4.0, mean:2.19, p95:2.81, n:30, unit:"s"},
-    {k:"asr",  name:"ASR final",        sub:"speech end → transcript", target:0.8, mean:0.31, p95:0.34, n:30, unit:"s"},
-    {k:"llm",  name:"LLM first token",  sub:"transcript → 1st token",  target:1.5, mean:1.20, p95:1.61, n:30, unit:"s"},
-    {k:"tts",  name:"TTS first audio",  sub:"text → 1st audio chunk",  target:0.6, mean:0.41, p95:0.36, n:30, unit:"s"},
-    {k:"barge",name:"Barge-in",         sub:"speech → playback stops", target:0.8, mean:0.94, p95:1.24, n:2,  unit:"s"},
-    {k:"wer",  name:"WER",              sub:"ASR accuracy, test set",  target:15,  mean:9.8,  p95:null, n:30, unit:"%"}
-  ]
-};
-const ROBUST = {
-  source: "Measured on the Pi with the agent's own voice and a fan running; scripts/echo_check.sh finds the safe speaker level in the venue in about a minute.",
-  threshold: 0.8,
-  bars: [
-    {label:"Fan alone", v:0.05, ok:true, note:"safe"},
-    {label:"Agent's own voice, speaker at 80 %", v:0.17, ok:true, note:"safe (default)"},
-    {label:"Agent's own voice, speaker at 90 %", v:0.90, ok:false, note:"interrupts itself"}
-  ],
-  phantom: "phantom turns in the live run with the fan on."
-};
-const BEFORE_AFTER = {
-  source: "Challenges table of the deck; each pair was measured before and after the fix.",
-  rows: [
-    {name:"WER (class benchmark, earlier run)", before:"21.3 %", after:"4.2 %", why:"900 ms audio pre-roll"},
-    {name:"ASR final", before:"2.6 s", after:"0.3 s", why:"streaming ASR, warm websocket"},
-    {name:"TTS first audio", before:"1.4 s", after:"0.3 s", why:"pre-warmed connection"},
-    {name:"Past-date eval (news)", before:"0 / 10", after:"10 / 10", why:"past dates tagged in code"}
-  ]
-};
-const TOOLS_ON = {
-  source: "Live testing with tools ON. Not part of the class benchmark.",
-  items: [
-    "Plain turn: first sound about 2.0 to 2.6 s after end of speech.",
-    "Search turn: holding phrase at about 2.4 s, full answer at about 5 to 8 s.",
-    "Slow-connection line fired live on a real 5 s LLM stall (guard at 3 s).",
-    "Add the 0.45 s end-of-speech wait for what a person feels."
-  ]
-};
 const TARGET_MS = {asr:800, llm:1500, tts:600, e2e:4000};
 const STATE_UI = {
   idle:{w:"Idle", i:"◌", sub:"ready for you"}, listening:{w:"Listening", i:"●", sub:""},
@@ -451,21 +316,9 @@ const sec = ms => (ms/1000).toFixed(2) + " s";
 function median(a){ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y), m=s.length>>1; return s.length%2? s[m] : (s[m-1]+s[m])/2; }
 
 /* ===================== views ===================== */
-let view = "stage";
 const feed = $("feed");
 let pinned = true;
-function toBottom(){ if(pinned && view==="stage") feed.scrollTop = feed.scrollHeight; }
-function setView(v){
-  view = v; $("vStage").hidden = v!=="stage"; $("vNum").hidden = v!=="num";
-  [["tabStage","stage"],["tabNum","num"]].forEach(([id,k])=>{ $(id).setAttribute("aria-selected", k===v); $(id).tabIndex = k===v?0:-1; });
-  if(v==="stage"){ pinned=true; toBottom(); }
-}
-$("tabStage").addEventListener("click",()=>setView("stage")); $("tabNum").addEventListener("click",()=>setView("num"));
-document.addEventListener("keydown",e=>{
-  if(e.ctrlKey||e.metaKey||e.altKey||/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
-  if(e.key==="1") setView("stage"); else if(e.key==="2") setView("num"); else if(e.key==="v"||e.key==="V") setView(view==="stage"?"num":"stage");
-});
-
+function toBottom(){ if(pinned) feed.scrollTop = feed.scrollHeight; }
 /* ===================== hero ===================== */
 const hero = $("hero");
 (function buildHero(){
@@ -510,50 +363,10 @@ function flashHero(){ hero.classList.remove("flash"); void hero.offsetWidth; her
   const f=el("button","pbtn fx"); f.appendChild(el("i",null,"⚡")); f.appendChild(document.createTextNode("Barge-in flash")); f.addEventListener("click",flashHero); row.appendChild(f);
   window.setPreview = function(on, fromUser){
     $("btnPreview").setAttribute("aria-pressed",on); row.hidden=!on; $("prevBadge").hidden=!on;
-    if(on && fromUser) setView("stage");
     previewState = on ? (previewState||"listening") : null; paintHero();
   };
-  $("btnPreview").addEventListener("click",()=>setPreview($("btnPreview").getAttribute("aria-pressed")!=="true", true));
+  $("btnPreview").addEventListener("click",()=>setPreview($("btnPreview").getAttribute("aria-pressed")!=="true"));
   setPreview(true,false);   /* on by default; real events switch it off (see ingest) */
-})();
-
-/* ===================== NUMBERS view ===================== */
-function fmt(r,v){ return r.unit==="%" ? v.toFixed(1)+" %" : v.toFixed(2)+" s"; }
-(function buildNumbers(){
-  const rows = $("brows");
-  BENCH.rows.forEach(r=>{
-    const ok = r.mean <= r.target, max = Math.max(r.target*1.6, r.mean*1.08, (r.p95||0)*1.08);
-    const row = el("div","brow "+(ok?"ok":"miss"));
-    const nm = el("div","nm",r.name); nm.appendChild(el("small",null,r.sub)); row.appendChild(nm);
-    const tr = el("div","track"); const f = el("i"); f.style.width=(r.mean/max*100)+"%"; tr.appendChild(f);
-    if(r.p95!=null){ const p=el("u"); p.style.left=(r.p95/max*100)+"%"; p.title="p95 "+fmt(r,r.p95); tr.appendChild(p); }
-    const t = el("s"); t.style.left=(r.target/max*100)+"%"; t.title="target "+fmt(r,r.target); tr.appendChild(t); row.appendChild(tr);
-    const v = el("div","val",fmt(r,r.mean)); v.appendChild(el("small",null,(r.p95!=null?"p95 "+fmt(r,r.p95)+" · ":"")+"n="+r.n)); row.appendChild(v);
-    const st = el("div"); const b = el("span","badge "+(ok?"ok":"miss"),ok?"✓ PASS":"✕ MISS"); b.setAttribute("aria-label",(ok?"Pass":"Miss")+", target under "+fmt(r,r.target));
-    st.appendChild(b); st.appendChild(el("span","tgt","target < "+fmt(r,r.target))); row.appendChild(st);
-    rows.appendChild(row);
-  });
-  $("benchLegend").textContent = "Bar = mean. White line = target. Thin tick = p95.";
-  $("benchSrc").textContent = BENCH.source + " " + BENCH.note;
-
-  const rb = $("rbars");
-  ROBUST.bars.forEach(b=>{
-    const d = el("div","rb "+(b.ok?"ok":"miss")); const top = el("div","top");
-    top.appendChild(el("span",null,b.label+" · "+b.note)); top.appendChild(el("b",null,(b.ok?"✓ ":"✕ ")+b.v.toFixed(2)));
-    d.appendChild(top); const tr = el("div","track"); const i = el("i"); i.style.width=(b.v*100)+"%"; tr.appendChild(i);
-    const s = el("s"); s.style.left=(ROBUST.threshold*100)+"%"; tr.appendChild(s); d.appendChild(tr); rb.appendChild(d);
-  });
-  const thr = el("div","thr"); const sp = el("span",null,"VAD threshold "+ROBUST.threshold); sp.style.left=(ROBUST.threshold*100)+"%"; thr.appendChild(sp); rb.appendChild(thr);
-  $("phantom").textContent = ROBUST.phantom; $("robSrc").textContent = ROBUST.source;
-
-  const strip = $("strip");
-  BEFORE_AFTER.rows.forEach(r=>{
-    const c = el("div","card ba"); c.appendChild(el("div","nm",r.name));
-    const x = el("div","x"); x.appendChild(el("i",null,r.before)); x.appendChild(el("em",null,"→")); x.appendChild(el("u",null,r.after)); c.appendChild(x);
-    c.appendChild(el("div","why",r.why)); strip.appendChild(c);
-  });
-  const tc = el("div","card"); tc.appendChild(el("h2",null,"Tools on (live testing)")); const ul = el("ul","plain");
-  TOOLS_ON.items.forEach(t=>ul.appendChild(el("li",null,t))); tc.appendChild(ul); strip.appendChild(tc);
 })();
 
 /* ===================== live latency tiles + session stats ===================== */
@@ -684,65 +497,6 @@ async function startLive(){
   if(mode==="live" && abortC===ac){ setStatus(everLive?"reconnecting":"waiting"); scheduleRetry(); }
 }
 hostIn.addEventListener("change",()=>{ hostVal=hostIn.value.trim()||hostVal; store("kuya.host",hostVal); backoff=1000; everLive=false; if(mode==="live"){ resetView(); setStatus("waiting"); startLive(); } });
-
-/* ===================== REPLAY of a recorded real session ===================== */
-let rp = null;
-const menu=$("menu"), mMsg=$("mMsg");
-function closeMenu(){ menu.classList.remove("open"); $("btnReplay").setAttribute("aria-expanded","false"); }
-$("btnReplay").addEventListener("click",()=>{ const o=!menu.classList.contains("open"); menu.classList.toggle("open",o); $("btnReplay").setAttribute("aria-expanded",o); mMsg.textContent=""; if(o) $("mFile").focus(); });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeMenu(); });
-function normalise(data){
-  let ev = Array.isArray(data) ? data : (data && Array.isArray(data.events) ? data.events : null);
-  if(!ev) throw new Error("This file is not a list of agent events.");
-  ev = ev.filter(e=>e && typeof e.type==="string");
-  if(!ev.length) throw new Error("No agent events found in this file.");
-  ev = ev.map((e,i)=>[e,i]).sort((a,b)=>(a[0].t!=null&&b[0].t!=null?a[0].t-b[0].t:0)||a[1]-b[1]).map(x=>x[0]);
-  const date = data && !Array.isArray(data) ? (data.recorded||data.date||data.recorded_at||data.started||null) : null;
-  return {events:ev, date};
-}
-function startReplay(data, dateHint, name){
-  let n; try{ n = normalise(data); }catch(e){ mMsg.textContent = e.message; return; }
-  stopLive(); mode="replay"; resetView(); closeMenu(); setView("stage");
-  const d = n.date || dateHint || "date unknown";
-  rp = {events:n.events, i:0, timer:null, speed:1, paused:false, label:"REPLAY of a recorded real session, "+d+(name?" ("+name+")":"")};
-  $("chatCard").classList.add("isReplay"); $("replayLabel").textContent = rp.label; $("rpSpeed").textContent="1×"; $("rpPlay").textContent="Pause";
-  $("rpProg").max = rp.events.length; $("rpProg").value=0; setStatus("replay"); stepReplay();
-}
-function stepReplay(){
-  if(!rp) return; clearTimeout(rp.timer);
-  if(rp.paused) return;
-  if(rp.i>=rp.events.length){ $("rpPlay").textContent="Finished"; return; }
-  const ev = rp.events[rp.i]; ingestFrom("replay", ev); rp.i++; $("rpProg").value=rp.i;
-  if(rp.i>=rp.events.length){ $("rpPlay").textContent="Finished"; return; }
-  const nx = rp.events[rp.i]; let gap = (nx.t!=null && ev.t!=null) ? (nx.t-ev.t)*1000 : 400;
-  gap = Math.max(40, Math.min(gap, 3000)) / rp.speed;    // idle gaps longer than 3 s are shortened; latency chips use the recorded values
-  rp.timer = setTimeout(stepReplay, gap);
-}
-function exitReplay(){ if(rp){ clearTimeout(rp.timer); rp=null; } mode="live"; $("chatCard").classList.remove("isReplay"); resetView(); everLive=false; backoff=1000; setStatus("waiting"); startLive(); }
-$("rpExit").addEventListener("click",exitReplay);
-$("rpPlay").addEventListener("click",()=>{ if(!rp) return; if(rp.i>=rp.events.length) return; rp.paused=!rp.paused; $("rpPlay").textContent=rp.paused?"Play":"Pause"; stepReplay(); });
-$("rpRestart").addEventListener("click",()=>{ if(!rp) return; const keep=rp; clearTimeout(rp.timer); resetView(); keep.i=0; keep.paused=false; $("rpPlay").textContent="Pause"; setStatus("replay"); rp=keep; stepReplay(); });
-$("rpSpeed").addEventListener("click",()=>{ if(!rp) return; rp.speed = rp.speed===1?2:rp.speed===2?4:1; $("rpSpeed").textContent=rp.speed+"×"; });
-
-async function loadUrl(url, name, dateHint){
-  mMsg.textContent="Loading…";
-  try{ const r=await fetch(url,{cache:"no-store"}); if(!r.ok) throw new Error("HTTP "+r.status); const lm=r.headers.get("Last-Modified");
-    startReplay(await r.json(), dateHint || (lm? new Date(lm).toISOString().slice(0,10) : null), name); return true; }
-  catch(e){ mMsg.textContent = "Could not load "+(name||url)+" ("+(e.message||"blocked")+"). Browsers block reading files next to a page opened from disk: use “Choose a recorded session file…” instead."; return false; }
-}
-$("mFile").addEventListener("click",()=>{ if(location.protocol==="file:"){ mMsg.textContent="This page is opened from disk, so the browser will not let it read sample_session.json by itself. Choose the file instead."; $("filePick").click(); } else loadUrl("sample_session.json","sample_session.json"); });
-$("mPick").addEventListener("click",()=>$("filePick").click());
-$("filePick").addEventListener("change",async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
-  try{ startReplay(JSON.parse(await f.text()), new Date(f.lastModified).toISOString().slice(0,10), f.name); }catch(err){ mMsg.textContent="Could not read "+f.name+": "+err.message; } });
-$("mPi").addEventListener("click",async()=>{
-  mMsg.textContent="Asking the Pi…"; const ul=$("mList"); ul.textContent="";
-  try{ const r=await fetch(hostUrl("/sessions"),{cache:"no-store"}); if(!r.ok) throw new Error("HTTP "+r.status); let L=await r.json(); if(L && !Array.isArray(L)) L = L.sessions||Object.keys(L);
-    if(!L||!L.length){ mMsg.textContent="The Pi has no recorded sessions yet."; return; } mMsg.textContent="Pick one:";
-    L.slice(-12).reverse().forEach(s=>{ const id=typeof s==="object"?(s.id||s.session||s.name):s; const date=typeof s==="object"?(s.date||s.started||s.recorded||null):null;
-      const b=el("button","btn", String(id)+(date?" · "+date:"")+(typeof s==="object"&&s.turns!=null?" · "+s.turns+" turns":"")); const l=document.createElement("li"); l.appendChild(b); ul.appendChild(l);
-      b.addEventListener("click",()=>loadUrl(hostUrl("/replay?session="+encodeURIComponent(id)), String(id), date?String(date).slice(0,10):null)); });
-  }catch(e){ mMsg.textContent="The Pi is not reachable at "+hostVal+"."; }
-});
 
 /* ===================== display options ===================== */
 function setHC(on){ document.documentElement.classList.toggle("hc",on); $("btnHC").setAttribute("aria-pressed",on); store("kuya.hc",on?"1":"0"); }
