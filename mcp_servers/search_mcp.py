@@ -1,11 +1,16 @@
 """search-mcp: our MCP server for web search via Tavily. Streamable HTTP on localhost:8104.
 
-Tool: web_search(query) -> a short spoken-style answer plus the top headlines. URLs and markdown are stripped
-so the voice agent never reads them aloud.
+Tool: web_search(query) -> a short spoken-style answer read from the pages, with outlet names and dates. Generic pipeline,
+no topic rules:  rewrite the spoken question into clean queries -> search in parallel -> drop low-quality domains, merge,
+rerank -> a small fast model reads the page passages and answers ONLY from them -> if it says NOT FOUND, rewrite using what the
+pages did contain and try again (up to two retries). URLs and markdown are stripped so the agent never reads them aloud.
 """
+import asyncio
 import datetime
+import json
 import os
 import re
+from zoneinfo import ZoneInfo
 
 import httpx
 from dotenv import load_dotenv
@@ -13,43 +18,32 @@ from mcp.server.mcpserver import MCPServer
 
 load_dotenv()
 PORT = int(os.environ.get("SEARCH_MCP_PORT", "8104"))
+TZ_NAME = os.environ.get("TZ_NAME", "Asia/Manila")
+SMALL_MODEL = os.environ.get("EXTRACT_MODEL", "google/gemini-2.5-flash-lite")   # rewriter, reranker and reader
+MAX_RETRIES = int(os.environ.get("SEARCH_RETRIES", "2"))
+# Generic quality filter: short-video and social pages carry hashtags, not facts.
+BAD_DOMAINS = ("tiktok.com", "youtube.com", "facebook.com", "instagram.com", "pinterest.com", "x.com", "twitter.com")
 mcp = MCPServer("search-mcp")
 _client = httpx.AsyncClient(timeout=15)
+NL = chr(10)
 
 
 def clean(text: str) -> str:
-    text = re.sub(r"!?\((?:https?:)?/[^)\s]*\)", "", text)          # page-navigation link targets like (/games) or (/img.png)
+    text = re.sub(r"!?\((?:https?:)?/[^)\s]*\)", "", text)          # page-navigation link targets like (/games)
     text = re.sub(r"https?://\S+", "", text)
     text = re.sub(r"[*_#`>\[\]]", "", text)
     return re.sub(r"\s+", " ", text).strip()
 
 
-NEWSY = ("latest", "news", "today", "tonight", "yesterday", "election", "score", "won", "wins", "result", "current",
-         "now", "this week", "this year", "update", "recent", "happened", "winner", "standings", "price",
-         "who is the current")
-# Schedules and fixtures live on schedule PAGES, not in news articles: no news topic and no 'last month' filter for these.
-SCHEDULE = ("next game", "next match", "upcoming", "schedule", "fixture", "tomorrow", "when is", "when does", "when's",
-            "next concert", "next race")
+def host_of(url: str) -> str:
+    return re.sub(r"^www\.", "", re.sub(r"^https?://", "", url).split("/")[0])
 
 
-async def _search(key: str, query: str, topic: str, time_range: str | None, deep: bool = False, raw: bool = False) -> dict:
-    # Time-sensitive questions get the slower, more relevant 'basic' depth and 3 results (correctness over speed);
-    # everything else stays on 'fast'.
-    body = {"query": query, "max_results": 3 if deep else 2, "include_answer": True, "topic": topic,
-            "search_depth": os.environ.get("SEARCH_DEPTH_NEWS", "basic") if deep else os.environ.get("SEARCH_DEPTH", "fast")}
-    if raw:
-        body["include_raw_content"] = True          # the page text itself, not just a snippet
-    if time_range:
-        body["time_range"] = time_range
-    r = await _client.post("https://api.tavily.com/search", headers={"Authorization": f"Bearer {key}"}, json=body)
-    r.raise_for_status()
-    return r.json()
-
-
+# ---------------------------------------------------------------- date and time-zone helpers (done in code, not by the model)
 MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july", "august",
                                       "september", "october", "november", "december"], 1)}
 _MON = "|".join(MONTHS)
-DATE_PATTERNS = [  # (regex, how to read the groups)
+DATE_PATTERNS = [
     (re.compile(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+({_MON})\s*,?\s+(\d{{4}})\b", re.I), "dmy"),
     (re.compile(rf"\b({_MON})\s+(\d{{1,2}})(?:st|nd|rd|th)?\s*,?\s+(\d{{4}})\b", re.I), "mdy"),
     (re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b"), "iso"),
@@ -57,8 +51,8 @@ DATE_PATTERNS = [  # (regex, how to read the groups)
 
 
 def tag_past_dates(text: str, today: datetime.date | None = None) -> str:
-    """Add '(already in the past)' after any full date in the text that is earlier than today. Small models are poor at
-    comparing dates, and a past date presented as 'upcoming' sounds confidently wrong, so we do the comparison in code."""
+    """Add '(already in the past)' after full dates earlier than yesterday (one day of slack for time zones). Small models
+    are poor at comparing dates, so the comparison is done here."""
     today = today or datetime.date.today()
     hits = []
     for rx, kind in DATE_PATTERNS:
@@ -72,39 +66,22 @@ def tag_past_dates(text: str, today: datetime.date | None = None) -> str:
                     d = datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
             except ValueError:
                 continue
-            if d < today - datetime.timedelta(days=1):   # one day of slack: a game dated yesterday in the US can be live now elsewhere
+            if d < today - datetime.timedelta(days=1):
                 hits.append(m.end())
     for pos in sorted(set(hits), reverse=True):
         text = text[:pos] + " (already in the past)" + text[pos:]
     return text
 
 
-PERSON_RX = re.compile(r"^(?:(?:about|on|who is|who's|information (?:about|on)|research|search for)\s+)?"
-                       r"(?:(?:lord|dr|mr|ms|mrs|engr|atty)\.?\s+)?(?:[A-Z][\w'’.-]+\s+){1,3}[A-Z][\w'’.-]+\??$")
-
-
-def looks_like_person(query: str) -> bool:
-    """A query that is basically just a personal name (two to four capitalised words), or 'about me / myself'."""
-    q = query.strip()
-    return bool(PERSON_RX.match(q)) or bool(re.search(r"\b(about me|about myself|who am i)\b", q, re.I))
-
-
-STOP = {"the", "and", "for", "what", "when", "who", "how", "are", "is", "was", "next", "latest", "current", "this", "that",
-        "with", "from", "about", "tell", "give", "please", "game", "games", "today", "now"}
-TZ_NAME = os.environ.get("TZ_NAME", "Asia/Manila")
-
-
 ZONES = {"ET": "America/New_York", "EST": "America/New_York", "EDT": "America/New_York", "CT": "America/Chicago",
          "CST": "America/Chicago", "CDT": "America/Chicago", "MT": "America/Denver", "MST": "America/Denver",
          "MDT": "America/Denver", "PT": "America/Los_Angeles", "PST": "America/Los_Angeles", "PDT": "America/Los_Angeles",
          "UTC": "UTC", "GMT": "UTC", "BST": "Europe/London"}
-TIME_RX = re.compile(r"(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?\s*(ET|EST|EDT|CT|CST|CDT|MT|MST|MDT|PT|PST|PDT|UTC|GMT|BST)", re.I)
+TIME_RX = re.compile(r"(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?\s*(ET|EST|EDT|CT|CST|CDT|MT|MST|MDT|PT|PST|PDT|UTC|GMT|BST)", re.I)
 
 
-def annotate_times(text: str, user_tz: str = "Asia/Manila") -> str:
-    """Small models are poor at time-zone arithmetic, so do it in code: append the UTC and the user's local time after any
-    time written with a zone abbreviation, e.g. '7:30 a.m. ET' -> '7:30 a.m. ET (= 12:30 UTC / 8:30 PM Manila)'."""
-    from zoneinfo import ZoneInfo
+def annotate_times(text: str, user_tz: str = TZ_NAME) -> str:
+    """Small models are poor at time-zone arithmetic, so do it in code: '7:30 a.m. ET' -> '7:30 a.m. ET (= 12:30 UTC / 08:30 PM Manila)'."""
     today = datetime.datetime.now(ZoneInfo(user_tz)).date()
 
     def conv(m):
@@ -113,20 +90,35 @@ def annotate_times(text: str, user_tz: str = "Asia/Manila") -> str:
             return m.group(0)
         h = h % 12 + (12 if ap == "p" else 0)
         src = datetime.datetime(today.year, today.month, today.day, h, mi, tzinfo=ZoneInfo(ZONES[z]))
-        utc = src.astimezone(ZoneInfo("UTC"))
-        loc = src.astimezone(ZoneInfo(user_tz))
-        city = user_tz.split("/")[-1].replace("_", " ")
-        return f"{m.group(0)} (= {utc:%H:%M} UTC / {loc:%I:%M %p}".replace("(= 0", "(= ") + f" {city})"
+        utc, loc = src.astimezone(ZoneInfo("UTC")), src.astimezone(ZoneInfo(user_tz))
+        return f"{m.group(0)} (= {utc:%H:%M} UTC / {loc:%I:%M %p} {user_tz.split('/')[-1].replace('_', ' ')})"
 
     return TIME_RX.sub(conv, text)
 
 
+PERSON_RX = re.compile(r"^(?:(?:about|on|who is|who's|information (?:about|on)|research|search for)\s+)?"
+                       r"(?:(?:lord|dr|mr|ms|mrs|engr|atty)\.?\s+)?(?:[A-Z][\w'’.-]+\s+){1,3}[A-Z][\w'’.-]+\??$")
+
+
+def looks_like_person(query: str) -> bool:
+    q = query.strip()
+    return bool(PERSON_RX.match(q)) or bool(re.search(r"\b(about me|about myself|who am i)\b", q, re.I))
+
+
+CAUTION = ("CAUTION: this is a search for a person by name. These results may describe someone else who shares the name. "
+           "Do not present them as facts about the user; say they may not be the same person and ask for a distinguishing "
+           "detail. ")
+
+STOP = {"the", "and", "for", "what", "when", "who", "how", "are", "is", "was", "next", "latest", "current", "this", "that",
+        "with", "from", "about", "tell", "give", "please", "game", "games", "today", "now"}
+
+
 def best_chunks(text: str, query: str, today: datetime.date, k: int = 3, size: int = 420) -> list[str]:
-    """Pick the passages of a page that best match the question AND today's date (generic retrieval, no topic rules)."""
+    """Passages of a page that best match the question AND today's date (generic retrieval, no topic rules)."""
     words = {w for w in re.findall(r"[a-z0-9']+", query.lower()) if len(w) > 2} - STOP
     day_forms = {f"{today:%b} {today.day}".lower(), f"{today:%B} {today.day}".lower(), f"{today.day} {today:%B}".lower(),
                  f"{today:%A}".lower()}
-    chunks = [text[i:i + size] for i in range(0, min(len(text), 14000), size - 80)]
+    chunks = [text[i:i + size] for i in range(0, min(len(text), 20000), size - 80)]
 
     def score(c: str) -> int:
         cl = c.lower()
@@ -134,119 +126,171 @@ def best_chunks(text: str, query: str, today: datetime.date, k: int = 3, size: i
 
     ranked = [c for c in sorted(chunks, key=score, reverse=True)[:k] if score(c) > 0]
     out = [clean(c) for c in ranked]
-    return [c for c in out if sum(ch.isalnum() for ch in c) > 0.55 * max(len(c), 1)]   # drop passages that are mostly symbols
+    return [c for c in out if sum(ch.isalnum() for ch in c) > 0.55 * max(len(c), 1)]   # drop mostly-symbol passages
 
 
-def _trace(now, query: str, hosts: list, out: str) -> None:
+def _trace(now, query: str, hosts: list, out: str, note: str = "") -> None:
     """Raw trace so a bad answer can be pinned on retrieval (here) or on the model (what it said after)."""
     try:
-        import json as _j
-        import pathlib as _p
-        f = _p.Path(__file__).resolve().parent.parent / "logs" / "search_trace.jsonl"
+        import pathlib
+        f = pathlib.Path(__file__).resolve().parent.parent / "logs" / "search_trace.jsonl"
         with f.open("a", encoding="utf-8") as fh:
-            fh.write(_j.dumps({"t": now.isoformat(timespec="seconds"), "query": query, "sources": hosts, "result": out}) + chr(10))
+            fh.write(json.dumps({"t": now.isoformat(timespec="seconds"), "query": query, "sources": hosts, "note": note,
+                                 "result": out}) + NL)
     except Exception:
         pass
 
 
-EXTRACT_MODEL = os.environ.get("EXTRACT_MODEL", "google/gemini-2.5-flash-lite")
-EXTRACT_PROMPT = (
-    "You read web pages to answer one spoken question. Use ONLY the page text below; never use your own memory. "
-    "Answer in at most three plain sentences that can be read aloud: no lists, symbols or links. "
-    "Give the specific facts asked for (names, numbers, times, results) and say which source and date they come from. "
-    "Always state the time zone of any time, converting only when the page states the zone; if the question asks for a "
-    "different zone than the page uses, say what zone the page uses. Prefer the most recent information, and notice dates "
-    "that are already past compared with the current date. If the pages do not contain the asked-for fact, reply starting "
-    "with NOT FOUND and say briefly what the pages do contain.")
-
-
-async def extract_answer(query: str, now: datetime.datetime, sources: list[tuple[str, str, str]]) -> str | None:
-    """Have a small fast model read the page text and answer the question (search-then-read). Returns None on any failure
-    so the caller falls back to the plain passages."""
+# ---------------------------------------------------------------- small-model steps
+async def small(system: str, user: str, max_tokens: int = 220) -> str | None:
     key = os.environ.get("OPENROUTER_API_KEY")
-    if not key or not sources:
+    if not key:
         return None
-    nl = chr(10)
-    pages = (nl * 2).join(f"SOURCE {i + 1}: {host} {pub}" + nl + text for i, (host, pub, text) in enumerate(sources))
-    user = f"Current date and time: {now:%A %d %B %Y, %I:%M %p} {TZ_NAME}." + nl + f"Question: {query}" + nl * 2 + pages
     try:
         r = await _client.post("https://openrouter.ai/api/v1/chat/completions", headers={"Authorization": f"Bearer {key}"},
-                               json={"model": EXTRACT_MODEL, "temperature": 0, "max_tokens": 220,
-                                     "messages": [{"role": "system", "content": EXTRACT_PROMPT},
-                                                  {"role": "user", "content": user}]}, timeout=12)
+                               json={"model": SMALL_MODEL, "temperature": 0, "max_tokens": max_tokens,
+                                     "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]},
+                               timeout=12)
         r.raise_for_status()
-        return clean(r.json()["choices"][0]["message"]["content"]) or None
+        return r.json()["choices"][0]["message"]["content"].strip()
     except Exception:
         return None
 
 
+REWRITE_PROMPT = (
+    "You turn a spoken question into web search queries. The question may contain filler words and speech-recognition noise. "
+    "Write 2 short queries with different wording that name the specific thing asked for (entity, and the quantity or "
+    "attribute wanted, such as a score, a price, a time, a name, a number). When the question uses a relative time such as "
+    "today, tonight, latest, current or next, put the explicit date, month or year in the queries using the current date given. "
+    "Also decide news: true only if the person wants reporting on recent events, false for schedules, prices, facts and "
+    "everything else. Reply with JSON only: {\"queries\": [\"...\", \"...\"], \"news\": true|false}")
+
+
+async def rewrite(query: str, now: datetime.datetime, hint: str = "") -> tuple[list[str], bool]:
+    user = f"Current date: {now:%A %d %B %Y}. Time zone of the person: {TZ_NAME}.{NL}Spoken question: {query}"
+    if hint:
+        user += f"{NL}A previous search did not find the answer. The pages it read were about: {hint}{NL}Write different queries."
+    raw = await small(REWRITE_PROMPT, user, 160)
+    try:
+        data = json.loads(re.search(r"\{.*\}", raw, re.S).group(0))
+        qs = [str(q).strip() for q in data["queries"] if str(q).strip()][:2]
+        if qs:
+            return qs, bool(data.get("news"))
+    except Exception:
+        pass
+    return [query if re.search(r"(19|20)\d{2}", query) else f"{query} {now.year}"], False
+
+
+async def tavily(key: str, q: str, news: bool, depth: str) -> list[dict]:
+    body = {"query": q, "max_results": 5, "include_answer": False, "include_raw_content": True,
+            "topic": "news" if news else "general", "search_depth": depth}
+    if news:
+        body["time_range"] = "month"
+    try:
+        r = await _client.post("https://api.tavily.com/search", headers={"Authorization": f"Bearer {key}"}, json=body)
+        r.raise_for_status()
+        return r.json().get("results", [])
+    except Exception:
+        return []
+
+
+async def gather(key: str, queries: list[str], news: bool, depth: str) -> list[dict]:
+    """Search every query in parallel, drop low-quality domains, merge duplicates (best score wins)."""
+    batches = await asyncio.gather(*(tavily(key, q, news, depth) for q in queries))
+    merged: dict[str, dict] = {}
+    for results in batches:
+        for item in results:
+            url = item.get("url", "")
+            if not url or any(host_of(url).endswith(b) for b in BAD_DOMAINS):
+                continue
+            if url not in merged or item.get("score", 0) > merged[url].get("score", 0):
+                merged[url] = item
+    return sorted(merged.values(), key=lambda i: i.get("score", 0), reverse=True)
+
+
+RERANK_PROMPT = ("Pick the pages most likely to contain the answer to the question: prefer reputable, recent pages that match "
+                 "what was asked, and avoid pages about a different subject. Reply with JSON only: {\"best\": [numbers]} "
+                 "listing at most 3 page numbers, best first.")
+
+
+async def rerank(query: str, now: datetime.datetime, cands: list[dict]) -> list[dict]:
+    cands = cands[:8]
+    if len(cands) <= 3:
+        return cands
+    listing = NL.join(f"{i + 1}. {host_of(c['url'])} | {(c.get('published_date') or 'no date')[:16]} | "
+                      f"{clean(c.get('title', ''))[:90]} | {clean(c.get('content', ''))[:160]}" for i, c in enumerate(cands))
+    raw = await small(RERANK_PROMPT, f"Current date: {now:%d %B %Y}.{NL}Question: {query}{NL}{listing}", 40)
+    try:
+        idx = [int(n) - 1 for n in json.loads(re.search(r"\{.*\}", raw, re.S).group(0))["best"]]
+        picked = [cands[i] for i in idx if 0 <= i < len(cands)]
+        if picked:
+            return picked[:3]
+    except Exception:
+        pass
+    return cands[:3]
+
+
+READ_PROMPT = (
+    "You read web pages to answer one spoken question. Use ONLY the page text below; never use your own memory. "
+    "Answer in at most three plain sentences that can be read aloud: no lists, symbols or links. "
+    "Give the specific facts asked for (names, numbers, times, results) and say which source and date they come from. "
+    "Always state the time zone of any time; use the conversions written in brackets when present, and if the question asks "
+    "for a different zone than the page uses, say what zone the page uses. Prefer the most recent information, and notice "
+    "dates that are already past compared with the current date. If the pages do not contain the asked-for fact, reply "
+    "starting with NOT FOUND and say briefly what the pages do contain.")
+
+
+def passages(item: dict, query: str, today: datetime.date) -> str:
+    body = " ... ".join(best_chunks(item.get("raw_content") or "", query, today, k=5, size=900)) or clean(item.get("content", ""))
+    return annotate_times(tag_past_dates(body[:3500], today))
+
+
+async def read(query: str, now: datetime.datetime, pages: list[dict]) -> str | None:
+    blocks = []
+    for i, it in enumerate(pages):
+        pub = f"(published {it['published_date'][:16]})" if it.get("published_date") else ""
+        blocks.append(f"SOURCE {i + 1}: {host_of(it['url'])} {pub}{NL}{passages(it, query, now.date())}")
+    user = (f"Current date and time: {now:%A %d %B %Y, %I:%M %p} {TZ_NAME}." + NL + f"Question: {query}" + NL * 2
+            + (NL * 2).join(blocks))
+    ans = await small(READ_PROMPT, user, 220)
+    return clean(ans) if ans else None
+
+
+# ---------------------------------------------------------------- the tool
 @mcp.tool()
 async def web_search(query: str) -> str:
-    """Search the web for current information (news, schedules, results, facts). Reads the pages and returns the passages that
-    match the question and today's date, with the outlet names and a note of the current time and time zone. Always returns the
-    MOST RECENT information available; do not add a year to the query yourself. When searching for a person, results may be
-    about someone else who shares the name: do not present a name-only match as fact, say it may not be them, and confirm a
-    distinguishing detail (school, city, handle) with the user."""
+    """Search the web for current information (news, schedules, results, prices, facts). Rewrites the question into good
+    queries, reads the pages, and answers only from them, naming the outlets and dates. If the answer starts with NOT FOUND,
+    the pages did not contain it. Always returns the MOST RECENT information available; do not add a year to the query
+    yourself. When searching for a person, results may be about someone else who shares the name: do not present a name-only
+    match as fact, say it may not be them, and confirm a distinguishing detail (school, city, handle) with the user."""
     key = os.environ.get("TAVILY_API_KEY")
     if not key:
         return "Search is not available because the search key is missing."
-    from zoneinfo import ZoneInfo
     now = datetime.datetime.now(ZoneInfo(TZ_NAME))
-    q = query if re.search(r"(19|20)\d{2}", query) else f"{query} {now.year}"
-    ql = query.lower()
-    sched = any(w in ql for w in SCHEDULE)
-    newsy = any(w in ql for w in NEWSY) and not sched
-    if sched:
-        d = await _search(key, q, "general", None, deep=True, raw=True)
+    hint, answer, hosts, note = "", None, [], ""
+    for attempt in range(MAX_RETRIES + 1):
+        queries, news = await rewrite(query, now, hint)
+        cands = await gather(key, queries, news, "basic" if attempt == 0 else "advanced")
+        if not cands and news:                      # nothing recent: retry without the news filter
+            cands = await gather(key, queries, False, "basic")
+        if not cands:
+            hint, note = "nothing at all", f"attempt {attempt}: no pages for {queries}"
+            continue
+        top = await rerank(query, now, cands)
+        hosts = list(dict.fromkeys(host_of(c["url"]) for c in top))
+        answer = await read(query, now, top)
+        note = f"attempt {attempt}: queries={queries} news={news}"
+        if answer and not answer.upper().startswith("NOT FOUND"):
+            break
+        hint = (answer or "unrelated material")[:200]
+    if not answer:
+        out = "I found nothing useful for that search."
     else:
-        d = await _search(key, q, "news" if newsy else "general", "month" if newsy else "year", deep=newsy, raw=True)
-    if not d.get("results") and not d.get("answer"):
-        d = await _search(key, q, "general", None, deep=True, raw=True)
-    def matched(data: dict) -> bool:
-        return any(best_chunks(i.get("raw_content") or "", query, now.date()) for i in data.get("results", [])[:3])
-    if not matched(d):   # nothing on any page matches the question: look deeper once before giving back weak evidence
-        os.environ["SEARCH_DEPTH_NEWS"] = "advanced"
-        try:
-            d2 = await _search(key, q, "general", None, deep=True, raw=True)
-            if matched(d2):
-                d = d2
-        finally:
-            os.environ["SEARCH_DEPTH_NEWS"] = "basic"
-    evidence, hosts = [], []
-    for item in d.get("results", [])[:3]:
-        host = re.sub(r"^www\.", "", re.sub(r"^https?://", "", item.get("url", "")).split("/")[0])
-        passages = best_chunks(item.get("raw_content") or "", query, now.date()) or [clean(item.get("content", ""))[:320]]
-        pub = f", published {item['published_date'][:16]}" if item.get("published_date") else ""
-        evidence.append(f"[{host}{pub}] " + " ... ".join(passages))
-        if host and host not in hosts:
-            hosts.append(host)
-    if not evidence and not d.get("answer"):
-        return "I found nothing useful for that search."
-    pages = []
-    for item in d.get("results", [])[:3]:
-        host = re.sub(r"^www\.", "", re.sub(r"^https?://", "", item.get("url", "")).split("/")[0])
-        body = " ... ".join(best_chunks(item.get("raw_content") or "", query, now.date(), k=5, size=900)) or clean(item.get("content", ""))
-        pub = f"(published {item['published_date'][:16]})" if item.get("published_date") else ""
-        pages.append((host, pub, body[:3500]))
-    read = await extract_answer(query, now, pages)
-    if read:
-        out = read + (" Sources: " + ", ".join(hosts) + "." if hosts else "")
+        out = answer + (" Sources: " + ", ".join(hosts) + "." if hosts else "")
         if looks_like_person(query):
-            out = ("CAUTION: this is a search for a person by name. These results may describe someone else who shares the "
-                   "name. Do not present them as facts about the user; say they may not be the same person and ask for a "
-                   "distinguishing detail. " + out)
-        _trace(now, query, hosts, out)
-        return out
-    header = (f"Now: {now:%A %d %B %Y, %I:%M %p} {TZ_NAME}. Times in the sources are as written by each source; "
-              f"state which time zone you mean. ")
-    text = header + (" ".join(evidence) if evidence else clean(d.get("answer", "")))   # the provider's own summary is unverified: page text only
-    text = annotate_times(tag_past_dates(text))[:1900]
-    if looks_like_person(query):
-        text = ("CAUTION: this is a search for a person by name. These results may describe someone else who shares the "
-                "name. Do not present them as facts about the user; say they may not be the same person and ask for a "
-                "distinguishing detail. " + text)
-    out = text + (" Sources: " + ", ".join(hosts) + "." if hosts else "")
-    _trace(now, query, hosts, out)
+            out = CAUTION + out
+    _trace(now, query, hosts, out, note)
     return out
 
 
